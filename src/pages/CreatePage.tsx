@@ -4,16 +4,16 @@ import { CreateRoomForm } from '../features/arc/CreateRoomForm';
 
 export function CreatePage({
   onCreate,
-}: {
-  onCreate: (input: {
-    title: string;
-    nickname: string;
-    description?: string;
-    startDate: string;
-    endDate: string;
-    goals: { title: string; icon: string; targetCount?: number }[];
-  }) => { room: { inviteCode: string } };
-}) {
+  }: {
+    onCreate: (input: {
+      title: string;
+      nickname: string;
+      description?: string;
+      startDate: string;
+      endDate: string;
+      goals: { title: string; icon: string; targetCount?: number }[];
+    }) => { room: { inviteCode: string } } | Promise<{ room: { inviteCode: string } }>;
+  }) {
   const navigate = useNavigate();
   return (
     <main className="mx-auto w-full max-w-xl px-4 pt-6 pb-16 sm:px-6 md:max-w-2xl lg:max-w-2xl">
@@ -39,11 +39,11 @@ export function CreatePage({
 
       <div className="mt-6 rounded-2xl border border-line bg-surface p-4 sm:mt-8 sm:p-6 lg:p-7">
         <CreateRoomForm
-          onSubmit={(input) => {
-            const result = onCreate(input);
-            navigate(`/room/${result.room.inviteCode}`);
-          }}
-        />
+            onSubmit={async (input) => {
+              const result = await onCreate(input);
+              navigate(`/room/${result.room.inviteCode}`);
+            }}
+          />
       </div>
     </main>
   );

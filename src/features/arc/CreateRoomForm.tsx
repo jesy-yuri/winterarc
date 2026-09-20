@@ -45,7 +45,7 @@ function guessIcon(title: string): string {
 
 export function CreateRoomForm({
   onSubmit,
-}: {
+  }: {
   onSubmit: (input: {
     title: string;
     nickname: string;
@@ -53,10 +53,11 @@ export function CreateRoomForm({
     startDate: string;
     endDate: string;
     goals: GoalDraft[];
-  }) => void;
+  }) => void | Promise<void>;
 }) {
   const [title, setTitle] = useState('Crew Winter Arc');
   const [nickname, setNickname] = useState('');
+  const [busy, setBusy] = useState(false);
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState('2026-10-01');
   const [endDate, setEndDate] = useState('2027-01-01');
@@ -97,7 +98,8 @@ export function CreateRoomForm({
     );
   }
 
-  function submit() {
+  async function submit() {
+    if (busy) return;
     if (!title.trim() || !nickname.trim()) {
       setError('Room title and nickname are required.');
       return;
@@ -106,8 +108,14 @@ export function CreateRoomForm({
       setError('Add at least one goal.');
       return;
     }
+    setBusy(true);
     setError('');
-    onSubmit({ title, nickname, description, startDate, endDate, goals });
+    try {
+      await onSubmit({ title, nickname, description, startDate, endDate, goals });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong while creating.');
+      setBusy(false);
+    }
   }
 
   return (
@@ -268,8 +276,8 @@ export function CreateRoomForm({
       </section>
 
       {error && <p className="text-sm text-danger">{error}</p>}
-      <Button type="button" onClick={submit} className="w-full">
-        Create Room
+      <Button type="button" onClick={submit} disabled={busy} className="w-full">
+        {busy ? 'Creating…' : 'Create Room'}
       </Button>
     </div>
   );

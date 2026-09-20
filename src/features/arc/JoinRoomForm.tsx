@@ -8,22 +8,26 @@ export function JoinRoomForm({
   onSubmit,
 }: {
   initialCode?: string;
-  onSubmit: (input: { inviteCode: string; nickname: string }) => void;
+  onSubmit: (input: { inviteCode: string; nickname: string }) => void | Promise<void>;
 }) {
   const [code, setCode] = useState(initialCode);
   const [nickname, setNickname] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  function submit() {
+  async function submit() {
+    if (busy) return;
+    if (!code.trim() || !nickname.trim()) {
+      setError('Code and nickname are required.');
+      return;
+    }
+    setBusy(true);
+    setError('');
     try {
-      if (!code.trim() || !nickname.trim()) {
-        setError('Code and nickname are required.');
-        return;
-      }
-      setError('');
-      onSubmit({ inviteCode: code, nickname });
+      await onSubmit({ inviteCode: code, nickname });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong while joining.');
+      setBusy(false);
     }
   }
 
@@ -45,9 +49,9 @@ export function JoinRoomForm({
         autoComplete="nickname"
       />
       {error && <p className="text-[13px] text-danger">{error}</p>}
-      <Button type="button" onClick={submit}>
+      <Button type="button" onClick={submit} disabled={busy}>
         <LogIn size={16} aria-hidden="true" />
-        Join Room
+        {busy ? 'Joining…' : 'Join Room'}
       </Button>
     </div>
   );

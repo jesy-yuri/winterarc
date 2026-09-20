@@ -13,9 +13,9 @@ export function LandingPage({
 }: {
   store: LocalStore;
   today: string;
-  onJoin: (input: { inviteCode: string; nickname: string }) => {
-    room: { inviteCode: string };
-  };
+  onJoin: (input: { inviteCode: string; nickname: string }) =>
+    | { room: { inviteCode: string } }
+    | Promise<{ room: { inviteCode: string } }>;
 }) {
   return (
     <main className="mx-auto w-full max-w-2xl px-4 pb-16 sm:px-6 md:max-w-3xl lg:max-w-4xl lg:px-8">

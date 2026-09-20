@@ -2,6 +2,8 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthButton } from './components/ui/AuthButton';
 import { ThemeToggle } from './components/ui/ThemeToggle';
 import { useLocalArc } from './hooks/useLocalArc';
+import { useSupabaseArc } from './hooks/useSupabaseArc';
+import { useSupabaseUser } from './hooks/useSupabaseUser';
 import { CreatePage } from './pages/CreatePage';
 import { JoinPage } from './pages/JoinPage';
 import { LandingPage } from './pages/LandingPage';
@@ -9,6 +11,12 @@ import { PlatformAdminPage } from './pages/PlatformAdminPage';
 import { RoomPage } from './pages/RoomPage';
 
 function App() {
+  const { user } = useSupabaseUser();
+  const localArc = useLocalArc();
+  const remoteArc = useSupabaseArc(user);
+  // Signed in + configured → progress syncs per Gmail account across devices.
+  // Otherwise the app runs fully local on this device.
+  const arc = remoteArc.active ? remoteArc : localArc;
   const {
     store,
     today,
@@ -42,7 +50,20 @@ function App() {
     handleLeaveChallenge,
     handleSaveReflection,
     handleRecordUnlocks,
-  } = useLocalArc();
+  } = arc;
+
+  if (remoteArc.active && !remoteArc.ready) {
+    return (
+      <>
+        <ThemeToggle />
+        <AuthButton />
+        <main className="mx-auto flex w-full max-w-2xl flex-col items-center px-4 py-24 text-center sm:px-6">
+          <span aria-hidden="true" className="h-2.5 w-2.5 animate-pulse rounded-full bg-accent" />
+          <p className="mt-4 text-sm font-medium text-muted">Loading your crew…</p>
+        </main>
+      </>
+    );
+  }
 
   return (
     <BrowserRouter>

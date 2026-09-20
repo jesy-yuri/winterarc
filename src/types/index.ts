@@ -21,6 +21,8 @@ export interface Member {
   joinedAt: string;
   /** Custom profile picture (uploaded data URL or image URL). Empty = default letter avatar. */
   avatarUrl?: string;
+  /** Supabase auth user id — set for remote members, absent for local-only ones. */
+  userId?: string;
 }
 
 export interface Goal {

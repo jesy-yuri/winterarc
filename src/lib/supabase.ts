@@ -2,19 +2,49 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 let client: SupabaseClient | null = null;
 
-export function getSupabase(): SupabaseClient | null {
-  const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+/** Clean a pasted env value: trim spaces + strip wrapping quotes. */
+function clean(value: string | undefined): string {
+  const trimmed = (value ?? '').trim();
+  if (
+    trimmed.length >= 2 &&
+    ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+      (trimmed.startsWith("'") && trimmed.endsWith("'")))
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
+}
+
+function readEnv(): { url: string; anonKey: string } | null {
+  const url = clean(import.meta.env.VITE_SUPABASE_URL as string | undefined);
+  const anonKey = clean(import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined);
   if (!url || !anonKey) return null;
-  if (!client) client = createClient(url, anonKey);
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+  } catch {
+    return null;
+  }
+  return { url, anonKey };
+}
+
+export function getSupabase(): SupabaseClient | null {
+  // Never throw: a bad env value degrades to local mode instead of
+  // blanking the whole app (createClient throws on malformed URLs).
+  const env = readEnv();
+  if (!env) return null;
+  if (!client) {
+    try {
+      client = createClient(env.url, env.anonKey);
+    } catch {
+      return null;
+    }
+  }
   return client;
 }
 
 export function isSupabaseConfigured(): boolean {
-  return Boolean(
-    import.meta.env.VITE_SUPABASE_URL &&
-      import.meta.env.VITE_SUPABASE_ANON_KEY,
-  );
+  return getSupabase() !== null;
 }
 
 /** Google OAuth login. Redirects to Google, then back to the app. */

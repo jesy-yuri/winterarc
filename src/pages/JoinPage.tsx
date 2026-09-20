@@ -5,9 +5,9 @@ import { JoinRoomForm } from '../features/arc/JoinRoomForm';
 export function JoinPage({
   onJoin,
 }: {
-  onJoin: (input: { inviteCode: string; nickname: string }) => {
-    room: { inviteCode: string };
-  };
+  onJoin: (input: { inviteCode: string; nickname: string }) =>
+    | { room: { inviteCode: string } }
+    | Promise<{ room: { inviteCode: string } }>;
 }) {
   const { code } = useParams();
   const navigate = useNavigate();
@@ -35,10 +35,10 @@ export function JoinPage({
       <div className="mt-6 rounded-2xl border border-line bg-surface p-4 sm:p-6">
         <JoinRoomForm
           initialCode={code ?? ''}
-          onSubmit={(input) => {
-            const result = onJoin(input);
-            navigate(`/room/${result.room.inviteCode}`);
-          }}
+          onSubmit={async (input) => {
+              const result = await onJoin(input);
+              navigate(`/room/${result.room.inviteCode}`);
+            }}
         />
       </div>
     </main>

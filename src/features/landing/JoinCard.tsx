@@ -4,9 +4,9 @@ import { JoinRoomForm } from '../arc/JoinRoomForm';
 export function JoinCard({
   onJoin,
 }: {
-  onJoin: (input: { inviteCode: string; nickname: string }) => {
-    room: { inviteCode: string };
-  };
+  onJoin: (input: { inviteCode: string; nickname: string }) =>
+    | { room: { inviteCode: string } }
+    | Promise<{ room: { inviteCode: string } }>;
 }) {
   const navigate = useNavigate();
 
@@ -31,8 +31,8 @@ export function JoinCard({
         </p>
         <div className="mt-6 max-w-md">
           <JoinRoomForm
-            onSubmit={(input) => {
-              const result = onJoin(input);
+            onSubmit={async (input) => {
+              const result = await onJoin(input);
               navigate(`/room/${result.room.inviteCode}`);
             }}
           />
