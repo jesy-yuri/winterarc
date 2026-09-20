@@ -8,7 +8,7 @@ const OPTIONS: { id: Theme; title: string; hint: string; icon: typeof Moon }[] =
   { id: 'dark-warm', title: 'Warm dark', hint: 'Cozy night', icon: Sunset },
 ];
 
-/** Floating theme switcher — visible on every page, remembers the choice. */
+/** Header theme switcher — inline in the top bar, remembers the choice. */
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
@@ -36,15 +36,12 @@ export function ThemeToggle() {
   const CurrentIcon = current.icon;
 
   return (
-    <div
-      ref={rootRef}
-      className="fixed right-4 bottom-4 z-50 flex flex-col items-end gap-2 sm:right-6 sm:bottom-6"
-    >
+    <div ref={rootRef} className="relative flex flex-col items-end gap-2">
       {open && (
         <div
           role="menu"
           aria-label="Choose theme"
-          className="w-52 overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_8px_30px_rgb(0_0_0/0.25)]"
+          className="absolute top-full right-0 z-50 mt-2 w-52 overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_8px_30px_rgb(0_0_0/0.25)]"
         >
           {OPTIONS.map((opt) => {
             const Icon = opt.icon;
@@ -90,7 +87,7 @@ export function ThemeToggle() {
         aria-expanded={open}
         aria-label={`Choose theme, current is ${current.title}`}
         title={`Theme: ${current.title}`}
-        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface text-muted shadow-[0_2px_10px_rgb(0_0_0/0.18)] transition-colors duration-200 hover:border-accent/50 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/60"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-muted transition-colors duration-200 hover:border-accent/50 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/60 sm:h-10 sm:w-10"
       >
         <CurrentIcon size={18} aria-hidden="true" />
       </button>

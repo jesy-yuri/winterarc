@@ -27,7 +27,7 @@ export function GoogleMark() {
 }
 
 /**
- * Global Google auth control — visible on every page.
+ * Global Google auth control — inline in the header bar.
  * Renders nothing until Supabase env vars are set, so local-only
  * mode stays clean. Member ↔ account linking lands in Phase 2.
  */
@@ -64,14 +64,14 @@ export function AuthButton() {
   const label = user?.email ?? user?.user_metadata?.name ?? 'Account';
 
   return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-1.5 sm:top-6 sm:right-6">
+    <div className="relative flex flex-col items-end gap-1.5">
       {loading ? (
-        <span className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-[13px] text-faint">
+        <span className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-surface px-4 text-[13px] text-faint sm:h-10">
           <span aria-hidden="true" className="h-2 w-2 animate-pulse rounded-full bg-faint" />
           Checking session…
         </span>
       ) : user ? (
-        <span className="inline-flex h-10 max-w-[220px] items-center gap-2 rounded-full border border-line bg-surface pr-1.5 pl-3.5 shadow-[0_2px_10px_rgb(0_0_0/0.18)]">
+        <span className="inline-flex h-9 max-w-[220px] items-center gap-2 rounded-full border border-line bg-surface pr-1.5 pl-3.5 sm:h-10">
           <span className="min-w-0 truncate text-[13px] font-medium text-ink" title={label}>
             {label}
           </span>
@@ -91,7 +91,7 @@ export function AuthButton() {
           type="button"
           onClick={login}
           disabled={busy}
-          className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-[13px] font-semibold text-ink shadow-[0_2px_10px_rgb(0_0_0/0.18)] transition-colors duration-200 hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/60 disabled:opacity-60"
+          className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-surface px-4 text-[13px] font-semibold text-ink transition-colors duration-200 hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/60 disabled:opacity-60 sm:h-10"
         >
           <GoogleMark />
           {busy ? 'Redirecting…' : 'Sign in with Google'}
