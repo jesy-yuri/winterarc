@@ -1,4 +1,9 @@
 import { useState } from 'react';
+import { Dumbbell, Pencil } from 'lucide-react';
+import { Button } from '../../components/ui/Button';
+import { CheckRow } from '../../components/ui/Controls';
+import { InlineSelect } from '../../components/ui/Select';
+import { EmptyState, SectionHeader } from '../../components/ui/Section';
 import { REP_OPTIONS, WORKOUT_EXERCISES } from '../../lib/workouts';
 import type { CheckIn, WorkoutSelection } from '../../types';
 
@@ -53,125 +58,110 @@ export function WorkoutPlanEditor({
   const enabledCount = draft.filter((s) => s.included).length;
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white">My Workout Plan</h3>
-        {editing ? (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setDraft(selections);
-                setEditing(false);
-              }}
-              className="text-xs text-slate-400 hover:text-white"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={save}
-              className="rounded-lg bg-sky-500 px-3 py-1 text-xs font-medium text-white hover:bg-sky-400"
-            >
-              Save ({enabledCount})
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={startEditing}
-            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200 hover:border-white/25"
-          >
-            Customize
-          </button>
-        )}
-      </div>
-
-      {editing ? (
-        <ul className="flex flex-col gap-2">
-          {WORKOUT_EXERCISES.map((ex) => {
-            const sel = draft.find((s) => s.exerciseId === ex.id);
-            const included = sel?.included ?? false;
-            const count = sel?.targetCount ?? ex.defaultCount;
-            return (
-              <li
-                key={ex.id}
-                className={`rounded-lg border px-3 py-2 transition ${
-                  included ? 'border-sky-500/40 bg-sky-500/10' : 'border-white/10 bg-slate-900'
-                }`}
+    <div>
+      <SectionHeader
+        eyebrow="Workout"
+        title="Today's Workout"
+        description={
+          editing
+            ? 'Choose your exercises and reps, then save.'
+            : 'Your personal plan. Each exercise earns +10 XP.'
+        }
+        action={
+          editing ? (
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setDraft(selections);
+                  setEditing(false);
+                }}
+                className="w-full sm:w-auto"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-200">
+                Cancel
+              </Button>
+              <Button type="button" size="sm" onClick={save} className="w-full sm:w-auto">
+                Save{enabledCount > 0 ? ` (${enabledCount})` : ''}
+              </Button>
+            </div>
+          ) : (
+            <Button type="button" variant="secondary" size="sm" onClick={startEditing} className="w-full sm:w-auto">
+              <Pencil size={15} aria-hidden="true" />
+              Customize
+            </Button>
+          )
+        }
+      />
+
+      <div className="mt-4">
+        {editing ? (
+          <ul className="flex flex-col gap-2.5">
+            {WORKOUT_EXERCISES.map((ex) => {
+              const sel = draft.find((s) => s.exerciseId === ex.id);
+              const included = sel?.included ?? false;
+              const count = sel?.targetCount ?? ex.defaultCount;
+              return (
+                <li
+                  key={ex.id}
+                  className={`flex min-h-[54px] flex-col gap-2 rounded-xl border px-3 py-3 transition-colors duration-200 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between min-[420px]:gap-3 sm:px-4 ${
+                    included ? 'border-accent/30 bg-accent/[0.07]' : 'border-line bg-surface'
+                  }`}
+                >
+                  <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
                     <input
                       type="checkbox"
                       checked={included}
                       onChange={() => toggleIncluded(ex.id)}
-                      className="h-4 w-4 accent-sky-500"
+                      className="h-[18px] w-[18px] shrink-0 accent-accent"
                     />
-                    <span className="rounded-md border border-sky-500/30 bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-sky-300">
-                      {ex.icon}
-                    </span>
-                    <span>{ex.title}</span>
+                    <span className="truncate text-sm text-ink sm:text-[15px]">{ex.title}</span>
                   </label>
-                  <select
+                  <InlineSelect
+                    label={`${ex.title} reps`}
                     value={count}
                     onChange={(e) => setCount(ex.id, Number(e.target.value))}
                     disabled={!included}
-                    className="rounded-lg border border-white/10 bg-slate-900 px-2 py-1 text-xs text-white disabled:opacity-40"
                   >
                     {REP_OPTIONS.map((n) => (
                       <option key={n} value={n}>
-                        x{n}
+                        {n} reps
                       </option>
                     ))}
-                  </select>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      ) : enabledWorkouts.length === 0 ? (
-        <p className="text-xs text-slate-400">
-          Wala ka pang workout na napili. Pindutin ang Customize para isali ang Push Ups,
-          Curl Ups, Jumping Jacks, etc. at mamili ng count (10-100).
-        </p>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {enabledWorkouts.map((w) => {
-            const done = doneSet.has(w.goalId);
-            return (
+                  </InlineSelect>
+                </li>
+              );
+            })}
+          </ul>
+        ) : enabledWorkouts.length === 0 ? (
+          <EmptyState
+            icon={<Dumbbell size={20} aria-hidden="true" />}
+            title="No workout selected"
+            body="Pick exercises like Push Ups or Jumping Jacks and set your reps from 10 to 100."
+            action={
+              <Button type="button" variant="secondary" size="sm" onClick={startEditing}>
+                Choose exercises
+              </Button>
+            }
+          />
+        ) : (
+          <ul className="flex flex-col gap-2.5">
+            {enabledWorkouts.map((w) => (
               <li key={w.exerciseId}>
-                <button
-                  type="button"
-                  onClick={() => onToggleWorkout(w.exerciseId)}
-                  className={`flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-left text-sm transition ${
-                    done
-                      ? 'border-emerald-500/40 bg-emerald-500/10 text-white'
-                      : 'border-white/10 bg-slate-900 text-slate-200 hover:border-white/20'
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-emerald-300">
-                      {w.icon}
-                    </span>
-                    <span>{w.title}</span>
-                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-slate-200">
-                      x{w.targetCount}
-                    </span>
-                  </span>
-                  <span
-                    className={`flex h-5 w-5 items-center justify-center rounded-full border text-xs ${
-                      done ? 'border-emerald-400 bg-emerald-500 text-white' : 'border-white/20'
-                    }`}
-                  >
-                    {done ? 'v' : ''}
-                  </span>
-                </button>
+                <CheckRow
+                  checked={doneSet.has(w.goalId)}
+                  title={w.title}
+                  meta={`${w.targetCount} reps`}
+                  reward="+10 XP"
+                  tone="success"
+                  onToggle={() => onToggleWorkout(w.exerciseId)}
+                />
               </li>
-            );
-          })}
-        </ul>
-      )}
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

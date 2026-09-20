@@ -1,21 +1,163 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: ui-sans-system, system-ui, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* High-variance display face — condensed uppercase headlines.
+     Falls back to narrow system fonts when the webfont is unavailable. */
+  --font-display: "Anton", "Arial Narrow", "Helvetica Neue Condensed", system-ui, sans-serif;
+
+  /* Dark (default) — original cool night theme */
+  --color-base: #0b0d10;
+  --color-surface: #111418;
+  --color-raised: #171a1f;
+
+  --color-line: #22272f;
+
+  --color-ink: #eef1f5;
+  --color-muted: #9aa4b2;
+  --color-faint: #7d8794;
+
+  --color-accent: #38bdf8;
+  --color-accent-strong: #0ea5e9;
+
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+
+  /* Component layer — card elevation (mapped per theme below) */
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.12), 0 12px 32px -16px rgb(0 0 0 / 0.45);
+  --shadow-card-hover: 0 2px 4px rgb(0 0 0 / 0.14), 0 20px 44px -16px rgb(0 0 0 / 0.55);
+  --shadow-card-lg: 0 2px 6px rgb(0 0 0 / 0.14), 0 28px 56px -20px rgb(0 0 0 / 0.6);
+}
+
+/* Warm light cream — soft, calm on the eyes. Toggled via <html data-theme="warm"> */
+html[data-theme='warm'] {
+  --color-base: #faf6ef;
+  --color-surface: #fffdf8;
+  --color-raised: #f3ecdf;
+
+  --color-line: #e8dcc8;
+
+  --color-ink: #44382c;
+  --color-muted: #7d7163;
+  --color-faint: #a89c8c;
+
+  --color-accent: #c2703d;
+  --color-accent-strong: #a65a2e;
+
+  --color-success: #6f9a7d;
+  --color-warning: #c2943a;
+  --color-danger: #c06a58;
+
+  --shadow-card: 0 1px 2px rgb(68 56 44 / 0.1), 0 12px 32px -16px rgb(68 56 44 / 0.22);
+  --shadow-card-hover: 0 2px 4px rgb(68 56 44 / 0.12), 0 20px 44px -16px rgb(68 56 44 / 0.3);
+  --shadow-card-lg: 0 2px 6px rgb(68 56 44 / 0.12), 0 28px 56px -20px rgb(68 56 44 / 0.34);
+}
+
+/* Dark warm — cozy night mode with warm brown tones. Toggled via <html data-theme="dark-warm"> */
+html[data-theme='dark-warm'] {
+  --color-base: #17120d;
+  --color-surface: #201913;
+  --color-raised: #2b2118;
+
+  --color-line: #3d3225;
+
+  --color-ink: #f5ece0;
+  --color-muted: #c9b8a3;
+  --color-faint: #a08c73;
+
+  --color-accent: #e8a15c;
+  --color-accent-strong: #d17f33;
+
+  --color-success: #8fce9b;
+  --color-warning: #f5b942;
+  --color-danger: #e8836b;
+}
+
+:root {
+  color-scheme: dark;
+}
+html[data-theme='warm'] {
+  color-scheme: light;
+}
+html[data-theme='dark-warm'] {
+  color-scheme: dark;
 }
 
 body {
-  @apply bg-slate-950 text-slate-100 antialiased;
+  @apply bg-base text-ink antialiased;
+  overflow-x: clip;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Soft warm wash, only in warm theme so flat cream never looks stark */
+html[data-theme='warm'] body {
+  background-image: radial-gradient(1200px 500px at 50% -10%, rgb(194 112 61 / 0.06), transparent 70%);
+  background-attachment: fixed;
+}
+
+/* Cozy ember glow for dark warm — subtle so text stays readable */
+html[data-theme='dark-warm'] body {
+  background-image: radial-gradient(1200px 500px at 50% -10%, rgb(232 161 92 / 0.08), transparent 70%);
+  background-attachment: fixed;
 }
 
 html {
   scroll-behavior: smooth;
 }
 
+/* Prevent horizontal overflow from long words / wide children */
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+/* Larger, consistent tap targets on coarse pointers (mobile / tablet) */
+@media (pointer: coarse) {
+  button,
+  select,
+  input,
+  textarea,
+  summary,
+  a {
+    touch-action: manipulation;
+  }
+}
+
+/* Hide scrollbars for horizontal tab rails while keeping scroll */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 ::selection {
-  background: rgb(14 165 233 / 0.3);
+  background: color-mix(in srgb, var(--color-accent) 25%, transparent);
 }
 
 #root {
   min-height: 100svh;
+}
+
+/* Warm, soft focus rings everywhere */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+/* Calm scrollbars, per theme */
+* {
+  scrollbar-color: #2a313b transparent;
+}
+html[data-theme='warm'] * {
+  scrollbar-color: #d8c9b2 transparent;
+}
+html[data-theme='dark-warm'] * {
+  scrollbar-color: #4a3d2c transparent;
 }

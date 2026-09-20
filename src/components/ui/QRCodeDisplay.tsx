@@ -11,7 +11,7 @@ export function QRCodeDisplay({ value, size = 160 }: { value: string; size?: num
     QRCode.toCanvas(
       canvas,
       value,
-      { width: size, margin: 2, color: { dark: '#0f172a', light: '#ffffff' } },
+      { width: size, margin: 2, color: { dark: '#44382c', light: '#fffdf8' } },
       (err) => {
         setError(Boolean(err));
       },
@@ -19,13 +19,13 @@ export function QRCodeDisplay({ value, size = 160 }: { value: string; size?: num
   }, [value, size]);
 
   if (error) {
-    return <p className="text-xs text-red-400">QR unavailable.</p>;
+    return <p className="text-xs text-danger">QR unavailable.</p>;
   }
 
   return (
     <canvas
       ref={canvasRef}
-      className="rounded-lg border border-white/10 bg-white p-2"
+      className="rounded-xl border border-line bg-[#fffdf8] p-3 shadow-[0_1px_2px_rgb(68_56_44/0.06)]"
       aria-label="Room invite QR code"
     />
   );

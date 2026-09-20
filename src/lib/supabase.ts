@@ -16,3 +16,21 @@ export function isSupabaseConfigured(): boolean {
       import.meta.env.VITE_SUPABASE_ANON_KEY,
   );
 }
+
+/** Google OAuth login. Redirects to Google, then back to the app. */
+export async function signInWithGoogle(): Promise<void> {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Supabase is not configured yet.');
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin },
+  });
+  if (error) throw error;
+}
+
+export async function signOutUser(): Promise<void> {
+  const supabase = getSupabase();
+  if (!supabase) return;
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+}

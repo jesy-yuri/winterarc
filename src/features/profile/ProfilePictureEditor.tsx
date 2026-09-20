@@ -1,5 +1,8 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Camera, Link2, Trash2, X } from 'lucide-react';
 import { Avatar } from '../../components/ui/Avatar';
+import { Button } from '../../components/ui/Button';
+import { IconButton } from '../../components/ui/Controls';
 import { isLikelyImageUrl, processImageFile } from '../../lib/avatar';
 import type { Member } from '../../types';
 
@@ -16,10 +19,25 @@ export function ProfilePictureEditor({
   const [error, setError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open ]);
+
+  function openEditor() {
+    setUrlDraft(member.avatarUrl ?? '');
+    setError('');
+    setOpen(true);
+  }
+
   function saveUrl() {
     const v = urlDraft.trim();
     if (v && !isLikelyImageUrl(v)) {
-      setError('Dapat valid image URL (http/https) o i-upload ang pic.');
+      setError('Must be a valid image URL (http/https) or upload a photo.');
       return;
     }
     try {
@@ -27,7 +45,7 @@ export function ProfilePictureEditor({
       setError('');
       setOpen(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'May error sa pag save.');
+      setError(e instanceof Error ? e.message : 'Something went wrong while saving.');
     }
   }
 
@@ -41,7 +59,7 @@ export function ProfilePictureEditor({
       setUrlDraft(dataUrl);
       setOpen(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'May error sa pag upload.');
+      setError(e instanceof Error ? e.message : 'Something went wrong while uploading.');
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -55,87 +73,106 @@ export function ProfilePictureEditor({
       setError('');
       setOpen(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'May error sa pag remove.');
+      setError(e instanceof Error ? e.message : 'Something went wrong while removing.');
     }
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       <Avatar nickname={member.nickname} avatarUrl={member.avatarUrl} size="md" />
-      <div className="flex flex-col">
-        <p className="text-xs text-slate-400">
-          Ikaw si <span className="font-medium text-white">{member.nickname}</span> ({member.role})
+      <div className="min-w-0">
+        <p className="truncate text-sm text-muted">
+          <span className="font-medium text-ink">{member.nickname}</span> · {member.role}
         </p>
         <button
           type="button"
-          onClick={() => {
-            setUrlDraft(member.avatarUrl ?? '');
-            setError('');
-            setOpen((v) => !v);
-          }}
-          className="mt-0.5 w-fit text-xs text-sky-400 hover:text-sky-300"
+          onClick={openEditor}
+          className="mt-0.5 inline-flex items-center gap-1 text-[13px] text-accent transition-colors hover:text-accent-strong"
         >
-          {member.avatarUrl ? 'Palit profile pic' : 'Lagay profile pic'}
+          <Camera size={14} aria-hidden="true" />
+          {member.avatarUrl ? 'Change photo' : 'Add photo'}
         </button>
       </div>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-sm rounded-xl border border-white/10 bg-slate-900 p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Profile picture"
+            className="w-full max-w-sm rounded-2xl border border-line bg-surface p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white">Profile picture</h3>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="text-xs text-slate-400 hover:text-white"
-              >
-                Close
-              </button>
+              <h3 className="text-[15px] font-semibold text-ink">Profile picture</h3>
+              <IconButton label="Close" onClick={() => setOpen(false)}>
+                <X size={17} aria-hidden="true" />
+              </IconButton>
             </div>
 
-            <div className="mt-3 flex items-center gap-3">
+            <div className="mt-4 flex items-center gap-3">
               <Avatar nickname={member.nickname} avatarUrl={member.avatarUrl} size="lg" />
-              <p className="text-[11px] leading-relaxed text-slate-400">
-                Kapag walang pic, letter avatar ang default (tulad ng Gmail kapag walang photo).
-                Kapag nag Google login ka balang-araw, Gmail pic mo ang magiging default.
+              <p className="text-[13px] leading-relaxed text-muted">
+                When there is no photo, a letter avatar is used by default — like Gmail when there
+                is no profile photo.
               </p>
             </div>
 
-            <div className="mt-3 flex flex-col gap-2">
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                disabled={busy}
-                onChange={(e) => void handleFile(e.target.files?.[0])}
-                className="text-xs text-slate-300 file:mr-2 file:rounded-lg file:border-0 file:bg-sky-500 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-sky-400 disabled:opacity-50"
-              />
-              <div className="flex gap-2">
+            <div className="mt-4 flex flex-col gap-3">
+              <div>
+                <label htmlFor="profile-upload" className="block text-[13px] font-medium text-muted">
+                  Upload a photo
+                </label>
                 <input
-                  value={urlDraft}
-                  onChange={(e) => setUrlDraft(e.target.value)}
-                  placeholder="O mag-paste ng image URL..."
-                  className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:border-sky-500 focus:outline-none"
+                  ref={fileRef}
+                  id="profile-upload"
+                  type="file"
+                  accept="image/*"
+                  disabled={busy}
+                  onChange={(e) => void handleFile(e.target.files?.[0])}
+                  className="mt-1.5 text-[13px] text-muted file:mr-3 file:rounded-lg file:border file:border-line file:bg-raised file:px-3 file:py-1.5 file:text-[13px] file:font-medium file:text-ink hover:file:border-accent/40 disabled:opacity-50"
                 />
-                <button
-                  type="button"
-                  onClick={saveUrl}
-                  className="shrink-0 rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-400"
-                >
-                  Save
-                </button>
+              </div>
+              <div>
+                <label htmlFor="profile-url" className="block text-[13px] font-medium text-muted">
+                  Or paste an image link
+                </label>
+                <div className="mt-1.5 flex gap-2">
+                  <div className="relative flex-1">
+                    <Link2
+                      size={15}
+                      aria-hidden="true"
+                      className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-faint"
+                    />
+                    <input
+                      id="profile-url"
+                      value={urlDraft}
+                      onChange={(e) => setUrlDraft(e.target.value)}
+                      placeholder="https://..."
+                      inputMode="url"
+                      className="w-full rounded-lg border border-line bg-base py-2.5 pr-3 pl-9 text-sm text-ink transition-colors placeholder:text-faint focus:border-accent/60 focus:outline-none"
+                    />
+                  </div>
+                  <Button type="button" size="sm" onClick={saveUrl} className="min-h-[42px]">
+                    Save
+                  </Button>
+                </div>
               </div>
               {member.avatarUrl && (
                 <button
                   type="button"
                   onClick={remove}
-                  className="w-fit text-xs text-red-400 hover:text-red-300"
+                  className="inline-flex w-fit items-center gap-1.5 text-[13px] text-danger transition-colors hover:text-red-300"
                 >
-                  Remove pic (balik sa default)
+                  <Trash2 size={14} aria-hidden="true" />
+                  Remove photo
                 </button>
               )}
-              {busy && <p className="text-xs text-slate-400">Pino-process ang image...</p>}
-              {error && <p className="text-xs text-red-400">{error}</p>}
+              {busy && <p className="text-[13px] text-muted">Processing image...</p>}
+              {error && <p className="text-[13px] text-danger">{error}</p>}
             </div>
           </div>
         </div>

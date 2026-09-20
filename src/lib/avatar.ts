@@ -1,12 +1,12 @@
 const AVATAR_COLORS = [
-  'bg-sky-500',
-  'bg-violet-500',
-  'bg-emerald-500',
-  'bg-amber-500',
-  'bg-rose-500',
-  'bg-cyan-500',
-  'bg-fuchsia-500',
-  'bg-lime-600',
+  'bg-[#c2703d]',
+  'bg-[#8a9b6e]',
+  'bg-[#c2943a]',
+  'bg-[#9b7ebd]',
+  'bg-[#c06a58]',
+  'bg-[#6fa3a0]',
+  'bg-[#b08355]',
+  'bg-[#7d8ca3]',
 ];
 
 export function avatarColor(nickname: string): string {
@@ -51,7 +51,7 @@ const MAX_AVATAR_BYTES = 150 * 1024;
  */
 export function processImageFile(file: File): Promise<string> {
   if (!file.type.startsWith('image/')) {
-    return Promise.reject(new Error('Dapat image file ang i-upload (JPG/PNG/WebP).'));
+    return Promise.reject(new Error('Please upload an image file (JPG/PNG/WebP).'));
   }
   return new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);
@@ -67,7 +67,7 @@ export function processImageFile(file: File): Promise<string> {
         canvas.height = h;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          reject(new Error('Hindi ma-process ang image sa browser na ito.'));
+          reject(new Error('Cannot process the image in this browser.'));
           return;
         }
         ctx.drawImage(img, 0, 0, w, h);
@@ -77,17 +77,17 @@ export function processImageFile(file: File): Promise<string> {
           dataUrl = canvas.toDataURL('image/png');
         }
         if (dataUrl.length > MAX_AVATAR_BYTES * 4) {
-          reject(new Error('Masyadong malaki ang image kahit na-resize. Subukan ang mas maliit.'));
+          reject(new Error('Image is still too large after resizing. Try a smaller one.'));
           return;
         }
         resolve(dataUrl);
       } catch {
-        reject(new Error('Hindi ma-process ang image. Subukan ang ibang file.'));
+        reject(new Error('Cannot process the image. Try a different file.'));
       }
     };
     img.onerror = () => {
       URL.revokeObjectURL(objectUrl);
-      reject(new Error('Hindi mabasa ang image file.'));
+      reject(new Error('Cannot read the image file.'));
     };
     img.src = objectUrl;
   });

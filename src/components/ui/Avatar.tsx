@@ -25,7 +25,7 @@ export function Avatar({
         alt={`${nickname} profile`}
         loading="lazy"
         referrerPolicy="no-referrer"
-        className={`${cls} border border-white/20 object-cover`}
+        className={`${cls} border border-line object-cover`}
       />
     );
   }
