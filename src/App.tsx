@@ -1,4 +1,5 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { AuthButton } from './components/ui/AuthButton';
 import { ThemeToggle } from './components/ui/ThemeToggle';
 import { useLocalArc } from './hooks/useLocalArc';
 import { CreatePage } from './pages/CreatePage';
@@ -16,7 +17,6 @@ function App() {
     handleToggle,
     handleToggleWorkout,
     handleSaveWorkoutPlan,
-    handleSwitch,
     handleAnnouncement,
     checkIsAdmin,
     checkIsOwner,
@@ -47,6 +47,7 @@ function App() {
   return (
     <BrowserRouter>
       <ThemeToggle />
+      <AuthButton />
       <Routes>
         <Route path="/" element={<LandingPage store={store} today={today} onJoin={handleJoin} />} />
         <Route path="/create" element={<CreatePage onCreate={handleCreate} />} />
@@ -71,7 +72,6 @@ function App() {
               onToggle={handleToggle}
               onToggleWorkout={handleToggleWorkout}
               onSaveWorkoutPlan={handleSaveWorkoutPlan}
-              onSwitch={handleSwitch}
               onAnnouncement={handleAnnouncement}
               checkIsAdmin={checkIsAdmin}
               checkIsOwner={checkIsOwner}

@@ -383,19 +383,6 @@ export function toggleCheckIn(
   return next;
 }
 
-export function switchMember(
-  store: LocalStore,
-  roomId: string,
-  memberId: string,
-): LocalStore {
-  const next: LocalStore = {
-    ...store,
-    currentMemberByRoom: { ...store.currentMemberByRoom, [roomId]: memberId },
-  };
-  saveStore(next);
-  return next;
-}
-
 export function sendAnnouncement(
   store: LocalStore,
   input: { roomId: string; authorMemberId: string; body: string },

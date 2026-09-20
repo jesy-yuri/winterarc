@@ -111,7 +111,6 @@ export function RoomPage({
   onToggle,
   onToggleWorkout,
   onSaveWorkoutPlan,
-  onSwitch,
   onAnnouncement,
   checkIsAdmin,
   checkIsOwner,
@@ -145,7 +144,6 @@ export function RoomPage({
     memberId: string;
     selections: { exerciseId: string; included: boolean; targetCount: number }[];
   }) => void;
-  onSwitch: (roomId: string, memberId: string) => void;
   onAnnouncement: (input: { roomId: string; authorMemberId: string; body: string }) => void;
   checkIsAdmin: (roomId: string, memberId: string | undefined) => boolean;
   checkIsOwner: (roomId: string, memberId: string | undefined) => boolean;
@@ -765,29 +763,25 @@ export function RoomPage({
             </div>
           )}
 
-          {/* Members */}
-          <section aria-label="Members" className="mt-8 border-t border-line pt-6 sm:mt-10">
+          {/* Your membership — device-bound identity, no impersonation switching */}
+          <section aria-label="Your membership" className="mt-8 border-t border-line pt-6 sm:mt-10">
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <span className="inline-flex items-center gap-1.5 text-[13px] text-faint">
                 <Users size={15} aria-hidden="true" />
-                Viewing as
+                Signed in as
               </span>
               <div className="flex min-w-0 flex-1 items-center gap-2">
-                {currentMember && (
-                  <Avatar nickname={currentMember.nickname} avatarUrl={currentMember.avatarUrl} size="xs" />
+                {currentMember ? (
+                  <>
+                    <Avatar nickname={currentMember.nickname} avatarUrl={currentMember.avatarUrl} size="xs" />
+                    <span className="truncate text-[13px] font-semibold text-ink">
+                      {currentMember.nickname}
+                    </span>
+                    <RoleBadge role={currentMember.role} />
+                  </>
+                ) : (
+                  <span className="text-[13px] text-muted">No member found on this device.</span>
                 )}
-                <select
-                  value={currentMemberId ?? ''}
-                  onChange={(e) => onSwitch(room.id, e.target.value)}
-                  aria-label="Viewing as member"
-                  className="w-full min-w-0 rounded-lg border border-line bg-surface px-2.5 py-2 text-[13px] text-ink focus:border-accent/60 focus:outline-none sm:w-auto sm:max-w-[220px]"
-                >
-                  {members.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.nickname} ({m.role})
-                    </option>
-                  ))}
-                </select>
               </div>
               <Link
                 to={`/join/${room.inviteCode}`}

@@ -23,7 +23,6 @@ import {
   sendAnnouncement,
   setMemberRole,
   setPersonalGoalActive,
-  switchMember,
   todayKey,
   toggleCheckIn,
   transferOwnership,
@@ -92,13 +91,6 @@ export function useLocalArc() {
   const handleSaveWorkoutPlan = useCallback(
     (input: { roomId: string; memberId: string; selections: WorkoutSelection[] }) => {
       setStore(saveWorkoutPlan(store, input));
-    },
-    [store],
-  );
-
-  const handleSwitch = useCallback(
-    (roomId: string, memberId: string) => {
-      setStore(switchMember(store, roomId, memberId));
     },
     [store],
   );
@@ -283,7 +275,6 @@ export function useLocalArc() {
     handleToggle,
     handleToggleWorkout,
     handleSaveWorkoutPlan,
-    handleSwitch,
     handleAnnouncement,
     checkIsAdmin,
     checkIsOwner,
