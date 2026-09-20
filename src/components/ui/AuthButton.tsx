@@ -32,7 +32,7 @@ export function GoogleMark() {
  * mode stays clean. Member ↔ account linking lands in Phase 2.
  */
 export function AuthButton() {
-  const { user, loading, isConfigured } = useSupabaseUser();
+  const { user, loading, isConfigured, authError } = useSupabaseUser();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -97,9 +97,9 @@ export function AuthButton() {
           {busy ? 'Redirecting…' : 'Sign in with Google'}
         </button>
       )}
-      {error && (
+      {(error || authError) && (
         <p role="alert" className="max-w-[220px] text-right text-xs text-danger">
-          {error}
+          {error || authError}
         </p>
       )}
     </div>
