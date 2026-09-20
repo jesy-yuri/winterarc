@@ -3,5 +3,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "rewrites": [{ "source": "/((?!assets|favicon.svg|icons.svg).*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/((?!assets|favicon.svg|icons.svg|icons|manifest.webmanifest|sw.js|workbox-.*).*)",
+      "destination": "/index.html"
+    }
+  ]
 }
