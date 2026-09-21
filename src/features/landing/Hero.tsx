@@ -25,7 +25,7 @@ export function Hero() {
   return (
     <header className="pt-10 pb-4 sm:pt-16 lg:pt-24">
       <p className="inline-block -rotate-2 bg-ink px-3 py-1.5 font-display text-sm tracking-[0.14em] text-base uppercase">
-        No password — just show up
+        BETA!
       </p>
       <p className="mt-5 flex items-center gap-2 text-xs font-bold tracking-[0.22em] text-faint uppercase">
         <span aria-hidden="true" className="inline-block h-2.5 w-2.5 shrink-0 bg-accent" />
