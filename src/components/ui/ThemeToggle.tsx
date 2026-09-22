@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, Heart, Moon, Sun, Sunset } from 'lucide-react';
+import { Check, Droplets, Heart, Moon, Sun, Sunset } from 'lucide-react';
 import { useTheme, type Theme } from '../../hooks/useTheme';
 
 const OPTIONS: { id: Theme; title: string; hint: string; icon: typeof Moon }[] = [
   { id: 'dark', title: 'Dark', hint: 'Cool night', icon: Moon },
   { id: 'warm', title: 'Warm light', hint: 'Soft cream', icon: Sun },
   { id: 'rose', title: 'Rosé', hint: 'Soft blush', icon: Heart },
+  { id: 'glass', title: 'Glass', hint: 'Mono blur', icon: Droplets },
   { id: 'dark-warm', title: 'Warm dark', hint: 'Cozy night', icon: Sunset },
 ];
 

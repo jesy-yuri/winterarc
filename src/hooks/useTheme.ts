@@ -1,20 +1,21 @@
 import { useCallback, useEffect, useState } from 'react';
 
-export type Theme = 'dark' | 'warm' | 'rose' | 'dark-warm';
+export type Theme = 'dark' | 'warm' | 'rose' | 'glass' | 'dark-warm';
 
 const STORAGE_KEY = 'winterarc-theme';
 
-const THEME_ORDER: Theme[] = ['dark', 'warm', 'rose', 'dark-warm'];
+const THEME_ORDER: Theme[] = ['dark', 'warm', 'rose', 'glass', 'dark-warm'];
 
 const THEME_COLORS: Record<Theme, string> = {
   dark: '#0b0d10',
   warm: '#faf6ef',
   rose: '#f9f1ef',
+  glass: '#09090b',
   'dark-warm': '#17120d',
 };
 
 function isTheme(value: unknown): value is Theme {
-  return value === 'dark' || value === 'warm' || value === 'rose' || value === 'dark-warm';
+  return value === 'dark' || value === 'warm' || value === 'rose' || value === 'glass' || value === 'dark-warm';
 }
 
 function readInitialTheme(): Theme {

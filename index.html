@@ -27,7 +27,7 @@
       try {
         var saved = localStorage.getItem('winterarc-theme');
         document.documentElement.dataset.theme =
-          saved === 'warm' || saved === 'rose' || saved === 'dark-warm' || saved === 'dark' ? saved : 'dark';
+          saved === 'warm' || saved === 'rose' || saved === 'glass' || saved === 'dark-warm' || saved === 'dark' ? saved : 'dark';
       } catch (e) {
         document.documentElement.dataset.theme = 'dark';
       }

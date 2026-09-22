@@ -104,6 +104,33 @@ html[data-theme='rose'] {
   --shadow-card-lg: 0 2px 6px rgb(70 48 56 / 0.1), 0 28px 56px -20px rgb(149 80 92 / 0.32);
 }
 
+/* Ghost glass — monochrome black & white fluid glass. ~50% translucent
+   surfaces + blurred B&W gradient, softened whites so text stays comfy.
+   Toggled via <html data-theme="glass"> */
+html[data-theme='glass'] {
+  --color-base: #09090b;
+  --color-surface: rgb(24 24 27 / 0.55);
+  --color-raised: rgb(39 39 42 / 0.55);
+
+  --color-line: rgb(255 255 255 / 0.12);
+
+  --color-ink: #f4f4f5;
+  --color-muted: #c2c2c9;
+  --color-faint: #8f8f99;
+
+  --color-accent: #fafafa;
+  --color-accent-strong: #d4d4d8;
+  --color-accent-ink: #09090b;
+
+  --color-success: #d9d9de;
+  --color-warning: #a7a7b0;
+  --color-danger: #8e8e96;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 24px 60px -20px rgb(0 0 0 / 0.7);
+  --shadow-card-hover: 0 2px 4px rgb(0 0 0 / 0.32), 0 32px 72px -20px rgb(0 0 0 / 0.78);
+  --shadow-card-lg: 0 2px 6px rgb(0 0 0 / 0.32), 0 40px 88px -24px rgb(0 0 0 / 0.82);
+}
+
 :root {
   color-scheme: dark;
 }
@@ -114,6 +141,9 @@ html[data-theme='rose'] {
   color-scheme: light;
 }
 html[data-theme='dark-warm'] {
+  color-scheme: dark;
+}
+html[data-theme='glass'] {
   color-scheme: dark;
 }
 
@@ -140,6 +170,24 @@ html[data-theme='dark-warm'] body {
 html[data-theme='rose'] body {
   background-image: radial-gradient(1100px 480px at 50% -10%, rgb(183 110 121 / 0.08), transparent 70%);
   background-attachment: fixed;
+}
+
+/* Ghost glass backdrop — black-white-black diagonal + soft white mist, blurred & fixed */
+html[data-theme='glass'] body {
+  background-color: #09090b;
+  background-image:
+    radial-gradient(1000px 600px at 15% -5%, rgb(255 255 255 / 0.16), transparent 60%),
+    radial-gradient(900px 700px at 85% 15%, rgb(255 255 255 / 0.1), transparent 65%),
+    radial-gradient(800px 800px at 50% 110%, rgb(255 255 255 / 0.07), transparent 60%),
+    linear-gradient(165deg, #000000 0%, #1b1b1f 28%, #55555e 50%, #1b1b1f 72%, #000000 100%);
+  background-attachment: fixed;
+}
+
+/* Fluid glass — freeze the blur on surfaces so floating cards read as frosted */
+html[data-theme='glass'] .bg-surface,
+html[data-theme='glass'] .bg-raised {
+  backdrop-filter: blur(20px) saturate(1.35);
+  -webkit-backdrop-filter: blur(20px) saturate(1.35);
 }
 
 html {
@@ -201,4 +249,7 @@ html[data-theme='dark-warm'] * {
 }
 html[data-theme='rose'] * {
   scrollbar-color: #d9bcb8 transparent;
+}
+html[data-theme='glass'] * {
+  scrollbar-color: #52525b transparent;
 }
