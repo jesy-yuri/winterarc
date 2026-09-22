@@ -137,7 +137,7 @@ export function RoomPage({
 }: {
   store: LocalStore;
   today: string;
-  onToggle: (input: { roomId: string; memberId: string; goalId: string }) => void;
+  onToggle: (input: { roomId: string; memberId: string; goalId: string }) => void | Promise<void>;
   onToggleWorkout: (input: { roomId: string; memberId: string; exerciseId: string }) => void;
   onSaveWorkoutPlan: (input: {
     roomId: string;

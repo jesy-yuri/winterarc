@@ -28,6 +28,7 @@ export function CheckRow({
   reward,
   onToggle,
   tone = 'accent',
+  pending = false,
 }: {
   checked: boolean;
   title: string;
@@ -35,17 +36,22 @@ export function CheckRow({
   reward?: string;
   onToggle: () => void;
   tone?: 'accent' | 'success';
+  pending?: boolean;
 }) {
   const doneBorder = tone === 'success' ? 'border-success/30 bg-success/[0.10]' : 'border-accent/30 bg-accent/[0.08]';
   const doneDot = tone === 'success' ? 'border-success bg-success text-[#fffdf8]' : 'border-accent bg-accent text-[#fffdf8]';
   return (
     <button
       type="button"
-      onClick={onToggle}
+      onClick={() => {
+        // Ignore extra taps while the previous one is still syncing.
+        if (!pending) onToggle();
+      }}
       aria-pressed={checked}
+      aria-disabled={pending}
       className={`flex min-h-[54px] w-full items-center gap-2.5 rounded-xl border px-3 py-3 text-left shadow-[0_1px_2px_rgb(68_56_44/0.05)] transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/60 sm:gap-3 sm:px-4 ${
         checked ? doneBorder : 'border-line bg-surface hover:border-accent/40'
-      }`}
+      } ${pending ? 'opacity-70' : ''}`}
     >
       <span
         aria-hidden="true"

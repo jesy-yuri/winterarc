@@ -1,4 +1,5 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { AuthButton } from './components/ui/AuthButton';
 import { ThemeToggle } from './components/ui/ThemeToggle';
 
@@ -88,6 +89,16 @@ function App() {
   return (
     <BrowserRouter>
       <TopBar />
+      <Toaster
+        position="bottom-center"
+        toastOptions={{
+          style: {
+            background: 'var(--color-surface)',
+            color: 'var(--color-ink)',
+            border: '1px solid var(--color-line)',
+          },
+        }}
+      />
       <Routes>
         <Route path="/" element={<LandingPage store={store} today={today} onJoin={handleJoin} />} />
         <Route path="/create" element={<CreatePage onCreate={handleCreate} />} />
