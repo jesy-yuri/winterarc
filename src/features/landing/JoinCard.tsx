@@ -26,8 +26,7 @@ export function JoinCard({
           Join your room
         </h2>
         <p className="mt-2 max-w-md text-sm leading-relaxed text-muted">
-          Enter the code shared by your admin and your nickname. You'll join as a member —
-          no signup, no password.
+          Enter the code shared by your admin and your nickname. You'll join as a member.
         </p>
         <div className="mt-6 max-w-md">
           <JoinRoomForm

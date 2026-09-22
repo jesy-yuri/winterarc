@@ -20,6 +20,7 @@
 
   --color-accent: #38bdf8;
   --color-accent-strong: #0ea5e9;
+  --color-accent-ink: #0b0d10;
 
   --color-success: #34d399;
   --color-warning: #fbbf24;
@@ -45,6 +46,7 @@ html[data-theme='warm'] {
 
   --color-accent: #c2703d;
   --color-accent-strong: #a65a2e;
+  --color-accent-ink: #fffdf8;
 
   --color-success: #6f9a7d;
   --color-warning: #c2943a;
@@ -69,16 +71,46 @@ html[data-theme='dark-warm'] {
 
   --color-accent: #e8a15c;
   --color-accent-strong: #d17f33;
+  --color-accent-ink: #17120d;
 
   --color-success: #8fce9b;
   --color-warning: #f5b942;
   --color-danger: #e8836b;
 }
 
+/* Rosé — soft milk-blush pink. Muted old-rose, editorial, easy on the eyes.
+   Toggled via <html data-theme="rose"> */
+html[data-theme='rose'] {
+  --color-base: #f9f1ef;
+  --color-surface: #fffaf8;
+  --color-raised: #f3e4e0;
+
+  --color-line: #e6cfc9;
+
+  --color-ink: #463038;
+  --color-muted: #80666d;
+  --color-faint: #b49aa1;
+
+  --color-accent: #b76e79;
+  --color-accent-strong: #95505c;
+  --color-accent-ink: #fff9f7;
+
+  --color-success: #7d9b8a;
+  --color-warning: #bd9241;
+  --color-danger: #bd655c;
+
+  --shadow-card: 0 1px 2px rgb(70 48 56 / 0.08), 0 12px 32px -16px rgb(149 80 92 / 0.2);
+  --shadow-card-hover: 0 2px 4px rgb(70 48 56 / 0.1), 0 20px 44px -16px rgb(149 80 92 / 0.28);
+  --shadow-card-lg: 0 2px 6px rgb(70 48 56 / 0.1), 0 28px 56px -20px rgb(149 80 92 / 0.32);
+}
+
 :root {
   color-scheme: dark;
 }
 html[data-theme='warm'] {
+  color-scheme: light;
+}
+html[data-theme='rose'] {
   color-scheme: light;
 }
 html[data-theme='dark-warm'] {
@@ -101,6 +133,12 @@ html[data-theme='warm'] body {
 /* Cozy ember glow for dark warm — subtle so text stays readable */
 html[data-theme='dark-warm'] body {
   background-image: radial-gradient(1200px 500px at 50% -10%, rgb(232 161 92 / 0.08), transparent 70%);
+  background-attachment: fixed;
+}
+
+/* Rosé wash — faint blush glow up top so the milk background feels soft, never flat */
+html[data-theme='rose'] body {
+  background-image: radial-gradient(1100px 480px at 50% -10%, rgb(183 110 121 / 0.08), transparent 70%);
   background-attachment: fixed;
 }
 
@@ -160,4 +198,7 @@ html[data-theme='warm'] * {
 }
 html[data-theme='dark-warm'] * {
   scrollbar-color: #4a3d2c transparent;
+}
+html[data-theme='rose'] * {
+  scrollbar-color: #d9bcb8 transparent;
 }

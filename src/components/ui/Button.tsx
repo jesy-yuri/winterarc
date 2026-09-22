@@ -10,7 +10,7 @@ const SIZES: Record<Size, string> = {
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    'bg-accent text-[#0b0d10] shadow-[0_1px_2px_rgb(68_56_44/0.15)] hover:bg-accent-strong active:bg-accent-strong',
+    'bg-accent text-accent-ink shadow-[0_1px_2px_rgb(68_56_44/0.15)] hover:bg-accent-strong active:bg-accent-strong',
   secondary:
     'border border-line bg-surface text-ink shadow-[0_1px_2px_rgb(68_56_44/0.06)] hover:border-accent/40 hover:bg-raised active:bg-raised',
   ghost: 'text-muted hover:bg-ink/[0.05] hover:text-ink active:bg-ink/[0.08]',

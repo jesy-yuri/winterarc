@@ -36,9 +36,9 @@ export function JoinPage({
         <JoinRoomForm
           initialCode={code ?? ''}
           onSubmit={async (input) => {
-              const result = await onJoin(input);
-              navigate(`/room/${result.room.inviteCode}`);
-            }}
+            const result = await onJoin(input);
+            navigate(`/room/${result.room.inviteCode}`);
+          }}
         />
       </div>
     </main>
