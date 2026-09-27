@@ -4,6 +4,7 @@ import type {
   Announcement,
   Challenge,
   ChallengeJoin,
+  ChatMessage,
   CheckIn,
   Goal,
   Member,
@@ -59,6 +60,14 @@ interface AnnouncementRow {
   id: string;
   room_id: string;
   author_member_id: string;
+  body: string;
+  created_at: string;
+}
+
+interface ChatMessageRow {
+  id: string;
+  room_id: string;
+  member_id: string;
   body: string;
   created_at: string;
 }
@@ -169,6 +178,10 @@ function toAnnouncement(a: AnnouncementRow): Announcement {
   return { id: a.id, roomId: a.room_id, authorMemberId: a.author_member_id, body: a.body, createdAt: a.created_at };
 }
 
+function toChatMessage(m: ChatMessageRow): ChatMessage {
+  return { id: m.id, roomId: m.room_id, memberId: m.member_id, body: m.body, createdAt: m.created_at };
+}
+
 function toWorkoutPlan(p: WorkoutPlanRow): WorkoutPlan {
   return { id: p.id, roomId: p.room_id, memberId: p.member_id, selections: p.selections ?? [], updatedAt: p.updated_at };
 }
@@ -217,6 +230,25 @@ function must<T>(res: { data: T | null; error: { message: string } | null }, wha
   return res.data;
 }
 
+/**
+ * True when a Supabase error means the chat_messages table does not exist
+ * yet (older database without the migration): PostgREST schema-cache miss
+ * (PGRST205) or a direct Postgres undefined-table error (42P01).
+ */
+function isMissingChatTable(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const code = (err as { code?: unknown }).code;
+  const message = (err as { message?: unknown }).message;
+  const text = `${typeof code === 'string' ? code : ''} ${typeof message === 'string' ? message : ''}`;
+  return (
+    text.includes('42P01') ||
+    text.includes('PGRST205') ||
+    text.includes('schema cache') ||
+    text.includes('Could not find the table') ||
+    (text.includes('chat_messages') && text.toLowerCase().includes('not exist'))
+  );
+}
+
 /* Scope load — everything the signed-in user can see. */
 
 export interface RemoteScope {
@@ -225,6 +257,9 @@ export interface RemoteScope {
   goals: Goal[];
   checkIns: CheckIn[];
   announcements: Announcement[];
+  chatMessages: ChatMessage[];
+  /** Set when chat could not be loaded (e.g. older DB without the table). Never fatal. */
+  chatMessagesError: string | null;
   workoutPlans: WorkoutPlan[];
   personalGoals: PersonalGoal[];
   challenges: Challenge[];
@@ -237,6 +272,7 @@ export interface RemoteScope {
 export async function loadUserScope(db: SupabaseClient, userId: string): Promise<RemoteScope> {
   const empty: RemoteScope = {
     rooms: [], members: [], goals: [], checkIns: [], announcements: [],
+    chatMessages: [], chatMessagesError: null,
     workoutPlans: [], personalGoals: [], challenges: [], challengeJoins: [],
     reflections: [], achievementUnlocks: [], systemAdminMemberIds: [],
   };
@@ -287,12 +323,35 @@ export async function loadUserScope(db: SupabaseClient, userId: string): Promise
     ((must(adminsRes, 'Admins') as { user_id: string }[]) ?? []).map((a) => a.user_id),
   );
 
+  // Chat is optional: older databases may not have chat_messages yet.
+  // A missing table must never break scope loading.
+  let chatMessages: ChatMessage[] = [];
+  let chatMessagesError: string | null = null;
+  try {
+    const chatRes = await db
+      .from('chat_messages')
+      .select('*')
+      .in('room_id', roomIds)
+      .order('created_at', { ascending: true });
+    if (chatRes.error) {
+      chatMessagesError = isMissingChatTable(chatRes.error)
+        ? 'Chat needs a database update.'
+        : 'Chat could not be loaded right now.';
+    } else {
+      chatMessages = ((chatRes.data ?? []) as ChatMessageRow[]).map(toChatMessage);
+    }
+  } catch {
+    chatMessagesError = 'Chat could not be loaded right now.';
+  }
+
   return {
     rooms,
     members,
     goals: (must(goalsRes, 'Goals') as GoalRow[]).map(toGoal),
     checkIns: (must(checkInsRes, 'Check-ins') as CheckInRow[]).map(toCheckIn),
     announcements: (must(announcementsRes, 'Announcements') as AnnouncementRow[]).map(toAnnouncement),
+    chatMessages,
+    chatMessagesError,
     workoutPlans: (must(plansRes, 'Workout plans') as WorkoutPlanRow[]).map(toWorkoutPlan),
     personalGoals: (must(personalRes, 'Personal goals') as PersonalGoalRow[]).map(toPersonalGoal),
     challenges: (must(challengesRes, 'Challenges') as ChallengeRow[]).map(toChallenge),
@@ -434,6 +493,26 @@ export async function sendAnnouncementRemote(
     body,
   });
   if (ins.error) throw new Error(ins.error.message);
+}
+
+/* Room chat (any room member can post; RLS enforces own member_id). */
+
+export async function sendChatMessageRemote(
+  db: SupabaseClient,
+  input: { roomId: string; memberId: string; body: string },
+): Promise<void> {
+  const body = input.body.trim();
+  if (!body) throw new Error('Message cannot be empty.');
+  if (body.length > 500) throw new Error('Message must be 500 characters or less.');
+  const ins = await db.from('chat_messages').insert({
+    room_id: input.roomId,
+    member_id: input.memberId,
+    body,
+  });
+  if (ins.error) {
+    if (isMissingChatTable(ins.error)) throw new Error('Chat needs a database update.');
+    throw new Error(ins.error.message);
+  }
 }
 
 /* Room + members management (caller checks owner/admin from loaded state; RLS enforces). */

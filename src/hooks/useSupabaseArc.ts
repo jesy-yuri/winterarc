@@ -19,6 +19,7 @@ import {
   saveReflectionRemote,
   saveWorkoutPlanRemote,
   sendAnnouncementRemote,
+  sendChatMessageRemote,
   setMemberRoleRemote,
   setPersonalGoalActiveRemote,
   toggleCheckInRemote,
@@ -43,6 +44,7 @@ import type { WorkoutSelection } from '../types';
 
 const EMPTY_SCOPE: RemoteScope = {
   rooms: [], members: [], goals: [], checkIns: [], announcements: [],
+  chatMessages: [], chatMessagesError: null,
   workoutPlans: [], personalGoals: [], challenges: [], challengeJoins: [],
   reflections: [], achievementUnlocks: [], systemAdminMemberIds: [],
 };
@@ -113,6 +115,7 @@ export function useSupabaseArc(user: User | null) {
       goals: scope.goals,
       checkIns: scope.checkIns,
       announcements: scope.announcements,
+      chatMessages: scope.chatMessages ?? [],
       currentMemberByRoom,
       workoutPlans: scope.workoutPlans,
       personalGoals: scope.personalGoals,
@@ -196,6 +199,18 @@ export function useSupabaseArc(user: User | null) {
       }
       const { db } = requireDb();
       await sendAnnouncementRemote(db, input);
+      await refresh();
+    },
+    [refresh, requireDb, store],
+  );
+
+  const handleChatMessage = useCallback(
+    async (input: { roomId: string; memberId: string; body: string }) => {
+      if (!store.members.some((m) => m.id === input.memberId && m.roomId === input.roomId)) {
+        throw new Error('You must be a room member to chat.');
+      }
+      const { db } = requireDb();
+      await sendChatMessageRemote(db, input);
       await refresh();
     },
     [refresh, requireDb, store],
@@ -431,12 +446,14 @@ export function useSupabaseArc(user: User | null) {
     ready,
     store,
     today,
+    chatError: scope.chatMessagesError ?? null,
     handleCreate,
     handleJoin,
     handleToggle,
     handleToggleWorkout,
     handleSaveWorkoutPlan,
     handleAnnouncement,
+    handleChatMessage,
     checkIsAdmin,
     checkIsOwner,
     handleUpdateRoom,

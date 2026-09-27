@@ -109,3 +109,11 @@ export interface Announcement {
   body: string;
   createdAt: string;
 }
+
+export interface ChatMessage {
+  id: string;
+  roomId: string;
+  memberId: string;
+  body: string;
+  createdAt: string;
+}

@@ -11,6 +11,7 @@ import {
   Flame,
   LogOut,
   Megaphone,
+  MessageCircle,
   QrCode,
   Settings,
   ShieldCheck,
@@ -33,6 +34,7 @@ import { RoomSettingsForm } from '../features/admin/RoomSettingsForm';
 import { AnnouncementBoard } from '../features/announcements/AnnouncementBoard';
 import { ArcProgress } from '../features/arc/ArcProgress';
 import { Challenges } from '../features/challenges/Challenges';
+import { ChatPanel } from '../features/chat/ChatPanel';
 import { DailyChecklist } from '../features/checkin/DailyChecklist';
 import { Leaderboard } from '../features/leaderboard/Leaderboard';
 import { PersonalGoals } from '../features/personal/PersonalGoals';
@@ -57,7 +59,7 @@ import { formatLongDate } from '../lib/progress';
 import { workoutExerciseIdFromGoalId } from '../lib/workouts';
 import type { MemberRole } from '../types';
 
-type Tab = 'checkin' | 'progress' | 'challenges' | 'leaderboard' | 'announcements' | 'admin';
+type Tab = 'checkin' | 'progress' | 'challenges' | 'leaderboard' | 'announcements' | 'chat' | 'admin';
 
 const TABS: { id: Tab; label: string; icon: typeof CalendarCheck; adminOnly?: boolean }[] = [
   { id: 'checkin', label: 'Today', icon: CalendarCheck },
@@ -65,6 +67,7 @@ const TABS: { id: Tab; label: string; icon: typeof CalendarCheck; adminOnly?: bo
   { id: 'challenges', label: 'Challenges', icon: Flag },
   { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
   { id: 'announcements', label: 'Announcements', icon: Megaphone },
+  { id: 'chat', label: 'Chat', icon: MessageCircle },
   { id: 'admin', label: 'Admin', icon: Settings, adminOnly: true },
 ];
 
@@ -112,6 +115,8 @@ export function RoomPage({
   onToggleWorkout,
   onSaveWorkoutPlan,
   onAnnouncement,
+  onChatMessage,
+  chatError,
   checkIsAdmin,
   checkIsOwner,
   onUpdateRoom,
@@ -145,6 +150,8 @@ export function RoomPage({
     selections: { exerciseId: string; included: boolean; targetCount: number }[];
   }) => void;
   onAnnouncement: (input: { roomId: string; authorMemberId: string; body: string }) => void;
+  onChatMessage: (input: { roomId: string; memberId: string; body: string }) => void | Promise<void>;
+  chatError: string | null;
   checkIsAdmin: (roomId: string, memberId: string | undefined) => boolean;
   checkIsOwner: (roomId: string, memberId: string | undefined) => boolean;
   onUpdateRoom: (roomId: string, actorMemberId: string, input: RoomSettingsInput) => void;
@@ -205,6 +212,9 @@ export function RoomPage({
   const announcements = store.announcements
     .filter((a) => a.roomId === room.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const chatMessages = (store.chatMessages ?? [])
+    .filter((m) => m.roomId === room.id)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   const currentMemberId = store.currentMemberByRoom[room.id] ?? members[0]?.id;
   const currentMember = members.find((m) => m.id === currentMemberId);
   const isCurrentUserAdmin = checkIsAdmin(room.id, currentMemberId);
@@ -651,6 +661,29 @@ export function RoomPage({
                   onSend={(body) => {
                     if (!currentMember) return;
                     onAnnouncement({ roomId: room.id, authorMemberId: currentMember.id, body });
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'chat' && (
+            <div className="mt-6 sm:mt-8">
+              <SectionHeader
+                eyebrow="Community"
+                title="Chat"
+                description="Talk with your crew. New messages appear after refresh."
+              />
+              <div className="mt-4">
+                <ChatPanel
+                  messages={chatMessages}
+                  members={members}
+                  currentMember={currentMember}
+                  canPost={currentMember != null}
+                  chatError={chatError}
+                  onSend={(body) => {
+                    if (!currentMember) return;
+                    return onChatMessage({ roomId: room.id, memberId: currentMember.id, body });
                   }}
                 />
               </div>

@@ -21,6 +21,7 @@ import {
   saveReflection,
   saveWorkoutPlan,
   sendAnnouncement,
+  sendChatMessage,
   setMemberRole,
   setPersonalGoalActive,
   todayKey,
@@ -98,6 +99,14 @@ export function useLocalArc() {
   const handleAnnouncement = useCallback(
     (input: { roomId: string; authorMemberId: string; body: string }) => {
       const next = sendAnnouncement(store, input);
+      setStore(next);
+    },
+    [store],
+  );
+
+  const handleChatMessage = useCallback(
+    (input: { roomId: string; memberId: string; body: string }) => {
+      const next = sendChatMessage(store, input);
       setStore(next);
     },
     [store],
@@ -276,6 +285,7 @@ export function useLocalArc() {
     handleToggleWorkout,
     handleSaveWorkoutPlan,
     handleAnnouncement,
+    handleChatMessage,
     checkIsAdmin,
     checkIsOwner,
     handleUpdateRoom,

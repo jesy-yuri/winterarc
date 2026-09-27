@@ -424,6 +424,39 @@ create policy "platform_admins_write_admin" on public.platform_admins
     )
   );
 
+-- ============ ROOM CHAT V1 ============
+-- Safe to re-run. New messages from other users appear after refresh
+-- (no realtime / polling in v1).
+
+create table if not exists public.chat_messages (
+  id uuid primary key default gen_random_uuid(),
+  room_id uuid not null references public.rooms (id) on delete cascade,
+  member_id uuid not null references public.members (id) on delete cascade,
+  body text not null check (char_length(body) between 1 and 500),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists chat_messages_room_idx
+  on public.chat_messages (room_id, created_at);
+
+alter table public.chat_messages enable row level security;
+
+drop policy if exists "chat_select_member" on public.chat_messages;
+
+create policy "chat_select_member"
+  on public.chat_messages
+  for select
+  to authenticated
+  using (public.is_room_member(room_id));
+
+drop policy if exists "chat_insert_own" on public.chat_messages;
+
+create policy "chat_insert_own"
+  on public.chat_messages
+  for insert
+  to authenticated
+  with check (public.is_own_member(member_id));
+
 -- ============ AVATAR STORAGE ============
 -- Run in SQL Editor (storage schema), or create via Dashboard > Storage.
 -- insert into storage.buckets (id, name, public)

@@ -3,6 +3,7 @@ import type {
   Announcement,
   Challenge,
   ChallengeJoin,
+  ChatMessage,
   CheckIn,
   Goal,
   Member,
@@ -26,6 +27,8 @@ export interface LocalStore {
   goals: Goal[];
   checkIns: CheckIn[];
   announcements: Announcement[];
+  /** Room chat v1 — optional so old saves and literals keep compiling. */
+  chatMessages?: ChatMessage[];
   currentMemberByRoom: Record<string, string>;
   workoutPlans: WorkoutPlan[];
   personalGoals: PersonalGoal[];
@@ -42,6 +45,7 @@ const emptyStore: LocalStore = {
   goals: [],
   checkIns: [],
   announcements: [],
+  chatMessages: [],
   currentMemberByRoom: {},
   workoutPlans: [],
   personalGoals: [],
@@ -62,6 +66,7 @@ function migrate(parsed: Partial<LocalStore>): LocalStore {
   const goals = (parsed.goals ?? []) as Goal[];
   const checkIns = (parsed.checkIns ?? []) as CheckIn[];
   const announcements = (parsed.announcements ?? []) as Announcement[];
+  const chatMessages = (parsed.chatMessages ?? []) as ChatMessage[];
   const currentMemberByRoom = (parsed.currentMemberByRoom ?? {}) as Record<string, string>;
   const workoutPlans = (parsed.workoutPlans ?? []) as WorkoutPlan[];
   const personalGoals = (parsed.personalGoals ?? []) as PersonalGoal[];
@@ -136,6 +141,18 @@ function migrate(parsed: Partial<LocalStore>): LocalStore {
     goals: fixedGoals,
     checkIns,
     announcements,
+    chatMessages: chatMessages.filter((m) => {
+      if (!m || typeof m.id !== 'string' || !m.id) return false;
+      if (typeof m.roomId !== 'string' || !roomIds.has(m.roomId)) return false;
+      if (typeof m.memberId !== 'string') return false;
+      // The author must still be a member of the message's room.
+      if (!fixedMembers.some((x) => x.id === m.memberId && x.roomId === m.roomId)) return false;
+      if (typeof m.body !== 'string') return false;
+      const body = m.body.trim();
+      if (!body || body.length > 500) return false;
+      if (typeof m.createdAt !== 'string' || !m.createdAt) return false;
+      return true;
+    }),
     currentMemberByRoom,
     workoutPlans: fixedPlans,
     personalGoals: personalGoals.filter((g) => memberIds.has(g.memberId)),
@@ -297,6 +314,7 @@ export function createRoom(
     goals: [...store.goals, ...goals],
     checkIns: store.checkIns,
     announcements: store.announcements,
+    chatMessages: store.chatMessages ?? [],
     currentMemberByRoom: { ...store.currentMemberByRoom, [room.id]: member.id },
     workoutPlans: store.workoutPlans ?? [],
     personalGoals: store.personalGoals ?? [],
@@ -403,6 +421,35 @@ export function sendAnnouncement(
   const next: LocalStore = {
     ...store,
     announcements: [entry, ...store.announcements],
+  };
+  saveStore(next);
+  return next;
+}
+
+export function sendChatMessage(
+  store: LocalStore,
+  input: { roomId: string; memberId: string; body: string },
+): LocalStore {
+  const member = store.members.find(
+    (m) => m.id === input.memberId && m.roomId === input.roomId,
+  );
+  if (!member) {
+    throw new Error('You must be a room member to chat.');
+  }
+  const body = input.body.trim();
+  if (!body) throw new Error('Message cannot be empty.');
+  if (body.length > 500) throw new Error('Message must be 500 characters or less.');
+  const entry: ChatMessage = {
+    id: generateId(),
+    roomId: input.roomId,
+    memberId: input.memberId,
+    body,
+    createdAt: new Date().toISOString(),
+  };
+  // Appended — oldest first, newest at the bottom.
+  const next: LocalStore = {
+    ...store,
+    chatMessages: [...(store.chatMessages ?? []), entry],
   };
   saveStore(next);
   return next;
@@ -874,6 +921,7 @@ function stripRoomMember(store: LocalStore, roomId: string, memberId: string): L
     challengeJoins: (store.challengeJoins ?? []).filter((j) => j.memberId !== memberId),
     reflections: (store.reflections ?? []).filter((r) => r.memberId !== memberId),
     achievementUnlocks: (store.achievementUnlocks ?? []).filter((u) => u.memberId !== memberId),
+    chatMessages: (store.chatMessages ?? []).filter((c) => c.memberId !== memberId),
     platform: {
       systemAdminMemberIds: (store.platform?.systemAdminMemberIds ?? []).filter(
         (id) => id !== memberId,
@@ -944,6 +992,7 @@ export function deleteRoom(store: LocalStore, roomId: string, actorMemberId: str
     goals: store.goals.filter((g) => g.roomId !== roomId),
     checkIns: store.checkIns.filter((c) => c.roomId !== roomId),
     announcements: store.announcements.filter((a) => a.roomId !== roomId),
+    chatMessages: (store.chatMessages ?? []).filter((c) => c.roomId !== roomId),
     workoutPlans: (store.workoutPlans ?? []).filter((p) => p.roomId !== roomId),
     challenges: (store.challenges ?? []).filter((c) => c.roomId !== roomId),
     challengeJoins: (store.challengeJoins ?? []).filter((j) => !challengeIds.has(j.challengeId)),

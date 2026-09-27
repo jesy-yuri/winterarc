@@ -48,6 +48,7 @@ function App() {
     handleToggleWorkout,
     handleSaveWorkoutPlan,
     handleAnnouncement,
+    handleChatMessage,
     checkIsAdmin,
     checkIsOwner,
     handleUpdateRoom,
@@ -124,6 +125,8 @@ function App() {
               onToggleWorkout={handleToggleWorkout}
               onSaveWorkoutPlan={handleSaveWorkoutPlan}
               onAnnouncement={handleAnnouncement}
+              onChatMessage={handleChatMessage}
+              chatError={remoteArc.active ? (remoteArc.chatError ?? null) : null}
               checkIsAdmin={checkIsAdmin}
               checkIsOwner={checkIsOwner}
               onUpdateRoom={handleUpdateRoom}
