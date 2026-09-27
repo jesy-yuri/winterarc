@@ -127,6 +127,7 @@ function App() {
               onAnnouncement={handleAnnouncement}
               onChatMessage={handleChatMessage}
               chatError={remoteArc.active ? (remoteArc.chatError ?? null) : null}
+              onRefreshChat={remoteArc.active ? remoteArc.refresh : undefined}
               checkIsAdmin={checkIsAdmin}
               checkIsOwner={checkIsOwner}
               onUpdateRoom={handleUpdateRoom}

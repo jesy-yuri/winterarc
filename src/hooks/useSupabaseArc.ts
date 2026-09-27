@@ -447,6 +447,7 @@ export function useSupabaseArc(user: User | null) {
     store,
     today,
     chatError: scope.chatMessagesError ?? null,
+    refresh,
     handleCreate,
     handleJoin,
     handleToggle,

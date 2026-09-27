@@ -13,6 +13,7 @@ import {
   Megaphone,
   MessageCircle,
   QrCode,
+  RefreshCw,
   Settings,
   ShieldCheck,
   Trash2,
@@ -117,6 +118,7 @@ export function RoomPage({
   onAnnouncement,
   onChatMessage,
   chatError,
+  onRefreshChat,
   checkIsAdmin,
   checkIsOwner,
   onUpdateRoom,
@@ -152,6 +154,7 @@ export function RoomPage({
   onAnnouncement: (input: { roomId: string; authorMemberId: string; body: string }) => void;
   onChatMessage: (input: { roomId: string; memberId: string; body: string }) => void | Promise<void>;
   chatError: string | null;
+  onRefreshChat?: () => Promise<void>;
   checkIsAdmin: (roomId: string, memberId: string | undefined) => boolean;
   checkIsOwner: (roomId: string, memberId: string | undefined) => boolean;
   onUpdateRoom: (roomId: string, actorMemberId: string, input: RoomSettingsInput) => void;
@@ -186,6 +189,8 @@ export function RoomPage({
   const [showQR, setShowQR] = useState(false);
   const [tab, setTab] = useState<Tab>('checkin');
   const [adminError, setAdminError] = useState('');
+  const [chatRefreshError, setChatRefreshError] = useState('');
+  const [refreshingChat, setRefreshingChat] = useState(false);
   const [leaveError, setLeaveError] = useState('');
   const room = store.rooms.find(
     (r) => r.inviteCode.toUpperCase() === (code ?? '').toUpperCase(),
@@ -277,6 +282,19 @@ export function RoomPage({
       setAdminError('');
     } catch (e) {
       setAdminError(e instanceof Error ? e.message : 'Something went wrong.');
+    }
+  }
+
+  async function refreshChat() {
+    if (!onRefreshChat || refreshingChat) return;
+    setRefreshingChat(true);
+    setChatRefreshError('');
+    try {
+      await onRefreshChat();
+    } catch (e) {
+      setChatRefreshError(e instanceof Error ? e.message : 'Could not refresh chat.');
+    } finally {
+      setRefreshingChat(false);
     }
   }
 
@@ -668,7 +686,7 @@ export function RoomPage({
           )}
 
           {activeTab === 'chat' && (
-            <div className="mt-6 sm:mt-8">
+            <div className="relative mt-6 sm:mt-8">
               <SectionHeader
                 eyebrow="Community"
                 title="Chat"
@@ -687,6 +705,27 @@ export function RoomPage({
                   }}
                 />
               </div>
+              {onRefreshChat && (
+                <div className="sticky bottom-6 z-10 mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => void refreshChat()}
+                    disabled={refreshingChat}
+                    aria-label="Refresh chat"
+                    title="Refresh chat"
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface text-muted shadow-card transition-colors duration-200 hover:text-ink disabled:opacity-60"
+                  >
+                    <RefreshCw
+                      size={18}
+                      aria-hidden="true"
+                      className={refreshingChat ? 'animate-spin' : ''}
+                    />
+                  </button>
+                </div>
+              )}
+              {chatRefreshError && (
+                <p className="mt-2 text-right text-xs text-danger">{chatRefreshError}</p>
+              )}
             </div>
           )}
 
