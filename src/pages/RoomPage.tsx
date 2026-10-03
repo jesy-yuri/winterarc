@@ -454,28 +454,23 @@ export function RoomPage({
             {tabButtons(false)}
           </nav>
 
-          {activeTab === 'checkin' && (
-            <>
-              {currentMemberId && (
-                <div className="mt-6">
-                  {(() => {
-                    const completion = dayCompletion(store, room.id, currentMemberId, today);
-                    return (
-                      <TodayReminder
-                        today={today}
-                        remainingCount={completion.remaining.length}
-                        total={completion.total}
-                        remainingTitles={completion.remaining.map((i) => i.title)}
-                        streak={myStat?.streak ?? 0}
-                        streakBadgeLabel={streakBadge?.label ?? null}
-                        checkedInToday={(myStat?.todayCount ?? 0) > 0}
-                        memberId={currentMemberId}
-                      />
-                    );
-                  })()}
-                </div>
-              )}
-            <div className="mt-6 grid gap-8 sm:mt-8 md:gap-10 lg:grid-cols-2 lg:items-start lg:gap-8 xl:gap-10">
+          {activeTab === 'checkin' &&
+            (() => {
+              const completion = currentMemberId
+                ? dayCompletion(store, room.id, currentMemberId, today)
+                : null;
+              return (
+                <TodayReminder
+                  today={today}
+                  remainingCount={completion?.remaining.length ?? 0}
+                  total={completion?.total ?? 0}
+                  remainingTitles={completion?.remaining.map((i) => i.title) ?? []}
+                  streak={myStat?.streak ?? 0}
+                  streakBadgeLabel={streakBadge?.label ?? null}
+                  checkedInToday={(myStat?.todayCount ?? 0) > 0}
+                  memberId={currentMemberId}
+                >
+                  <div className="mt-6 grid gap-8 sm:mt-8 md:gap-10 lg:grid-cols-2 lg:items-start lg:gap-8 xl:gap-10">
               <div className="flex min-w-0 flex-col gap-8 md:gap-10">
                 {/* Today's progress */}
                 <section aria-labelledby="today-progress">
@@ -604,9 +599,10 @@ export function RoomPage({
                   )}
                 </section>
               </div>
-            </div>
-            </>
-          )}
+                  </div>
+                </TodayReminder>
+              );
+            })()}
 
           {activeTab === 'progress' && currentMember && (
             <div className="mt-6 flex flex-col gap-8 sm:mt-8 md:gap-10">
