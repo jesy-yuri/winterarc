@@ -10,6 +10,7 @@ export function TodayReminder({
   remainingTitles,
   streak,
   streakBadgeLabel,
+  checkedInToday,
   memberId,
 }: {
   today: string;
@@ -18,6 +19,7 @@ export function TodayReminder({
   remainingTitles: string[];
   streak: number;
   streakBadgeLabel: string | null;
+  checkedInToday: boolean;
   memberId?: string;
 }) {
   const r = useDailyReminder({ today, remainingCount, total, remainingTitles, streak, memberId });
@@ -27,16 +29,16 @@ export function TodayReminder({
       void r.enableDeviceNotification().then((perm) => {
         if (perm === 'granted') {
           const ok = r.notifyNow();
-          if (ok) toast.success('Reminder sent sa device mo 📲');
+          if (ok) toast.success('Reminder sent to your device');
         } else if (perm === 'denied') {
-          toast.error('Blocked ang notifications. I-Allow sa browser settings.');
+          toast.error('Notifications are blocked. Allow them in your browser settings.');
         }
       });
       return;
     }
     const ok = r.notifyNow();
-    if (ok) toast.success('Reminder sent sa device mo 📲');
-    else toast.error('Hindi na-send ang popup. Try ulit.');
+    if (ok) toast.success('Reminder sent to your device');
+    else toast.error('Could not send the notification. Try again.');
   }
 
   if (!r.showCard && r.prefs.enabled) {
@@ -56,14 +58,14 @@ export function TodayReminder({
           onEveningTimeChange={r.setEveningTime}
           onEnableDeviceNotification={() => {
             void r.enableDeviceNotification().then((perm) => {
-              if (perm === 'granted') toast.success('Device popup enabled 📲');
-              else if (perm === 'denied') toast.error('Blocked. I-Allow sa browser settings.');
+              if (perm === 'granted') toast.success('Device notifications enabled');
+              else if (perm === 'denied') toast.error('Blocked. Allow notifications in your browser settings.');
             });
           }}
           onTestNotify={handleNotify}
           onEnableBackgroundPush={() => {
             void r.enableBackgroundPush().then((sub) => {
-              if (sub) toast.success('Background push on — kahit close ang app 🔔');
+              if (sub) toast.success('Background push enabled. You will be notified even when the app is closed.');
             });
           }}
           onDisableBackgroundPush={() => {
@@ -84,6 +86,7 @@ export function TodayReminder({
         remainingTitles={remainingTitles}
         streak={streak}
         streakBadgeLabel={streakBadgeLabel}
+        checkedInToday={checkedInToday}
         isEvening={r.isEvening}
         title={r.copy.title}
         body={r.copy.body}

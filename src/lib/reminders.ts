@@ -83,8 +83,8 @@ export interface ReminderCopy {
 }
 
 /**
- * Build the Taglish reminder copy.
- * - Morning/app-open: "Today's goal" list.
+ * Build the reminder copy.
+ * - Morning/app-open: today's remaining goals.
  * - Evening + streak alive: streak-at-risk warning.
  */
 export function buildReminderCopy(args: {
@@ -98,27 +98,27 @@ export function buildReminderCopy(args: {
   const preview =
     remainingTitles.length > 0
       ? remainingTitles.slice(0, 3).join(', ') +
-        (remainingTitles.length > 3 ? ` +${remainingTitles.length - 3} pa` : '')
+        (remainingTitles.length > 3 ? ` +${remainingTitles.length - 3} more` : '')
       : '';
 
   if (isEvening && streak > 0) {
     return {
-      title: `🔥 ${streak}-day streak mo at risk!`,
+      title: `Your ${streak}-day streak is at risk`,
       body:
         remainingCount > 0
-          ? `Habol na — ${remainingCount}/${total} goals pa today${preview ? `: ${preview}` : ''}. Check in para hindi maputol ang streak.`
-          : `Nice — tapos mo today! Balik bukas para umabot ng ${streak + 1} days.`,
+          ? `You still have ${remainingCount} of ${total} goals left today${preview ? `: ${preview}` : ''}. Check in to keep your streak alive.`
+          : `Day complete. Come back tomorrow to reach ${streak + 1} days.`,
     };
   }
   return {
     title:
       remainingCount > 0
-        ? `Today's goal: ${remainingCount}/${total} pa 💪`
-        : `Day complete! 🎉`,
+        ? `Today's goals: ${remainingCount} of ${total} remaining`
+        : `Day complete`,
     body:
       remainingCount > 0
-        ? `Hindi pa tapos: ${preview || `${remainingCount} goals`}. Tap para mag-check in.${streak > 0 ? ` 🔥 ${streak}-day streak mo, ingatan!` : ''}`
-        : `Lahat tapos na today.${streak > 0 ? ` 🔥 ${streak}-day streak — solid!` : ''}`,
+        ? `Remaining: ${preview || `${remainingCount} goals`}. Select a goal to check in.${streak > 0 ? ` Your ${streak}-day streak is on the line.` : ''}`
+        : `Everything is done for today.${streak > 0 ? ` ${streak}-day streak — well done.` : ''}`,
   };
 }
 

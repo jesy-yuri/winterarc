@@ -156,15 +156,15 @@ export function useDailyReminder({
       const perm = await requestNotificationPermission();
       setPermission(perm);
       if (perm !== 'granted') {
-        setPushError('Kailangan i-Allow ang notifications sa browser.');
+        setPushError('Please allow notifications in your browser.');
         return null;
       }
       const sub = await subscribeBackgroundPush();
       if (!sub) {
         setPushError(
           vapidConfigured
-            ? 'Hindi maka-subscribe sa push. Try ulit.'
-            : 'Kulang pa ng VAPID key (Step 1). Foreground reminder muna gumagana.',
+            ? 'Could not subscribe to push. Try again.'
+            : 'VAPID key missing (Step 1). Foreground reminders still work.',
         );
         return null;
       }
@@ -173,13 +173,13 @@ export function useDailyReminder({
         ? await savePushSubscription(getSupabase(), memberId, sub)
         : 'local-only';
       if (result === 'failed') {
-        setPushError('Na-subscribe sa browser pero hindi na-save sa server. Try ulit.');
+        setPushError('Subscribed in the browser but could not save to the server. Try again.');
         return null;
       }
       update({ pushSubscribed: true });
       if (result === 'local-only') {
         setPushError(
-          'Naka-subscribe sa browser, pero walang server connection (local mode o hindi pa na-Run ang migration). Background push gagana pag naka-Supabase + migration na.',
+          'Subscribed in the browser but there is no server connection (local mode or migration not applied yet). Background push works once Supabase and the migration are set up.',
         );
       }
       void endpoint;

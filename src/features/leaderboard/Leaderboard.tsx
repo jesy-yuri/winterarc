@@ -1,7 +1,8 @@
-import { Crown, Flame, Trophy } from 'lucide-react';
+import { Crown, Trophy } from 'lucide-react';
 import { Avatar } from '../../components/ui/Avatar';
 import { Badge, EmptyState } from '../../components/ui/Section';
 import { getStreakBadge, type MemberStat } from '../../lib/localStore';
+import { StreakFlame } from '../streak/StreakFlame';
 
 function rankLabel(index: number): string {
   return `${index + 1}`.padStart(2, '0');
@@ -82,7 +83,7 @@ function PodiumCard({
         {stat.xp} <span className="text-xs font-normal text-faint">XP</span>
       </p>
       <p className="mt-1 inline-flex items-center gap-1 text-xs text-faint tabular-nums">
-        <Flame size={12} aria-hidden="true" />
+        <StreakFlame checkedInToday={stat.todayCount > 0} size={12} streak={stat.streak} />
         {stat.streak} day streak
       </p>
 

@@ -79,7 +79,7 @@ export function ReminderSettings({
               {permission === 'granted'
                 ? 'allowed'
                 : permission === 'denied'
-                  ? 'blocked (i-Allow sa browser settings)'
+                  ? 'blocked (allow in browser settings)'
                   : permission === 'unsupported'
                     ? 'not supported'
                     : 'not asked yet'}
@@ -99,7 +99,7 @@ export function ReminderSettings({
             )}
             {!enabled && (
               <span className="inline-flex items-center gap-1 text-xs text-faint">
-                <BellOff size={13} aria-hidden="true" /> Naka-off ang reminder
+                <BellOff size={13} aria-hidden="true" /> Reminder is off
               </span>
             )}
           </div>
@@ -107,15 +107,15 @@ export function ReminderSettings({
 
         <div className="flex flex-col gap-2 border-t border-line pt-3">
           <p className="text-[13px] text-muted">
-            Background push (kahit close ang app):{' '}
+            Background push (works when the app is closed):{' '}
             <strong className="text-ink">
               {!pushSupported
-                ? 'not supported sa browser na to'
+                ? 'not supported in this browser'
                 : pushSubscribed
                   ? 'on'
                   : vapidConfigured
                     ? 'off'
-                    : 'need VAPID key (Step 1)'}
+                    : 'needs a VAPID key (Step 1)'}
             </strong>
           </p>
           {pushSupported && (
@@ -137,7 +137,7 @@ export function ReminderSettings({
                   variant="secondary"
                   disabled={pushBusy || !vapidConfigured}
                   onClick={onEnableBackgroundPush}
-                  title={vapidConfigured ? 'Subscribe' : 'Generate VAPID key muna (Step 1)'}
+                  title={vapidConfigured ? 'Subscribe' : 'Generate a VAPID key first (Step 1)'}
                 >
                   {pushBusy ? 'Subscribing…' : 'Enable background push'}
                 </Button>
@@ -148,7 +148,7 @@ export function ReminderSettings({
           {!vapidConfigured && (
             <p className="text-xs text-faint">
               Run <code className="rounded bg-raised px-1">npx web-push generate-vapid-keys</code>{' '}
-              tapos lagay sa <code className="rounded bg-raised px-1">.env.local</code> bilang{' '}
+              then add it to <code className="rounded bg-raised px-1">.env.local</code> as{' '}
               <code className="rounded bg-raised px-1">VITE_VAPID_PUBLIC_KEY</code>.
             </p>
           )}

@@ -103,10 +103,10 @@ Deno.serve(async () => {
       ).maybeSingle();
 
       const payload = JSON.stringify({
-        title: streak > 0 ? `🔥 ${streak}-day streak mo at risk!` : `Today's goal: ${remaining}/${total} pa 💪`,
+        title: streak > 0 ? `Your ${streak}-day streak is at risk` : `Today's goals: ${remaining} of ${total} remaining`,
         body: streak > 0
-          ? `Habol na — ${remaining}/${total} goals pa today. Check in para hindi maputol.`
-          : `${remaining}/${total} goals pa today. Tap para mag-check in.`,
+          ? `You still have ${remaining} of ${total} goals left today. Check in to keep your streak alive.`
+          : `${remaining} of ${total} goals left today. Select a goal to check in.`,
         url: room ? `/room/${room.invite_code}` : '/',
       });
 

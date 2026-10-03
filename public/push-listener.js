@@ -5,7 +5,7 @@
  */
 
 self.addEventListener('push', (event) => {
-  let data = { title: 'Winter Arc', body: 'May goals ka pa today!', url: '/' };
+  let data = { title: 'Winter Arc', body: 'You still have goals left today.', url: '/' };
   try {
     if (event.data) {
       const parsed = event.data.json();

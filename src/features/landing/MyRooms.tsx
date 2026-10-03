@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Flame, Plus } from 'lucide-react';
+import { ArrowRight, Plus } from 'lucide-react';
 import { Avatar } from '../../components/ui/Avatar';
 import { getMemberStats, type LocalStore } from '../../lib/localStore';
+import { StreakFlame } from '../streak/StreakFlame';
 
 export function MyRooms({ store, today }: { store: LocalStore; today: string }) {
   if (store.rooms.length === 0) return null;
@@ -53,7 +54,11 @@ export function MyRooms({ store, today }: { store: LocalStore; today: string }) 
                   <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted">
                     {currentMember ? `You are ${currentMember.nickname}` : 'No member'}
                     <span className="inline-flex items-center gap-1 rounded-md border border-accent/25 bg-accent/[0.10] px-1.5 py-0.5 text-[11px] font-semibold text-accent-strong tabular-nums">
-                      <Flame size={11} aria-hidden="true" />
+                      <StreakFlame
+                        checkedInToday={(myStat?.todayCount ?? 0) > 0}
+                        size={11}
+                        streak={myStat?.streak ?? 0}
+                      />
                       {myStat?.streak ?? 0}-day streak
                     </span>
                   </p>

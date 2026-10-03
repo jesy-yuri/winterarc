@@ -8,7 +8,6 @@ import {
   Copy,
   Crown,
   Flag,
-  Flame,
   LogOut,
   Megaphone,
   MessageCircle,
@@ -45,6 +44,7 @@ import { RoomSwitcher } from '../features/rooms/RoomSwitcher';
 import { WorkoutPlanEditor } from '../features/workout/WorkoutPlanEditor';
 import { ProfilePictureEditor } from '../features/profile/ProfilePictureEditor';
 import { TodayReminder } from '../features/reminders/TodayReminder';
+import { StreakFlame } from '../features/streak/StreakFlame';
 import {
   getEnabledWorkouts,
   getMemberStats,
@@ -468,6 +468,7 @@ export function RoomPage({
                         remainingTitles={completion.remaining.map((i) => i.title)}
                         streak={myStat?.streak ?? 0}
                         streakBadgeLabel={streakBadge?.label ?? null}
+                        checkedInToday={(myStat?.todayCount ?? 0) > 0}
                         memberId={currentMemberId}
                       />
                     );
@@ -518,7 +519,13 @@ export function RoomPage({
                   </div>
                   <div className="mt-5 grid grid-cols-3 divide-x divide-line rounded-2xl border border-line bg-surface px-1 sm:px-2">
                     <Stat
-                      icon={<Flame size={17} aria-hidden="true" />}
+                      icon={
+                        <StreakFlame
+                          checkedInToday={(myStat?.todayCount ?? 0) > 0}
+                          size={17}
+                          streak={myStat?.streak ?? 0}
+                        />
+                      }
                       value={`${myStat?.streak ?? 0}`}
                       label={streakBadge ? `Day streak · ${streakBadge.label}` : 'Day streak'}
                     />

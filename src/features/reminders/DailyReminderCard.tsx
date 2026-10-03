@@ -1,6 +1,7 @@
-import { BellRing, Flame, X } from 'lucide-react';
+import { BellRing, X } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Section';
+import { StreakFlame } from '../streak/StreakFlame';
 
 export function DailyReminderCard({
   remainingCount,
@@ -8,6 +9,7 @@ export function DailyReminderCard({
   remainingTitles,
   streak,
   streakBadgeLabel,
+  checkedInToday,
   isEvening,
   title,
   body,
@@ -20,6 +22,7 @@ export function DailyReminderCard({
   remainingTitles: string[];
   streak: number;
   streakBadgeLabel: string | null;
+  checkedInToday: boolean;
   isEvening: boolean;
   title: string;
   body: string;
@@ -65,13 +68,13 @@ export function DailyReminderCard({
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Badge tone="accent">
-          <Flame size={11} aria-hidden="true" />
+          <StreakFlame checkedInToday={checkedInToday} size={11} streak={streak} />
           {streak}-day streak{streakBadgeLabel ? ` · ${streakBadgeLabel}` : ''}
         </Badge>
         <Badge tone="neutral">
-          {remainingCount}/{total} goals pa
+          {remainingCount} of {total} goals left
         </Badge>
-        {isEvening && streak > 0 && <Badge tone="warning">At risk — habol na!</Badge>}
+        {isEvening && streak > 0 && <Badge tone="warning">At risk — check in soon</Badge>}
       </div>
 
       {preview.length > 0 && (
