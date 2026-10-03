@@ -44,6 +44,7 @@ import { WeeklyReview } from '../features/progress/WeeklyReview';
 import { RoomSwitcher } from '../features/rooms/RoomSwitcher';
 import { WorkoutPlanEditor } from '../features/workout/WorkoutPlanEditor';
 import { ProfilePictureEditor } from '../features/profile/ProfilePictureEditor';
+import { TodayReminder } from '../features/reminders/TodayReminder';
 import {
   getEnabledWorkouts,
   getMemberStats,
@@ -56,7 +57,7 @@ import {
   type PersonalGoalInput,
   type RoomSettingsInput,
 } from '../lib/localStore';
-import { formatLongDate } from '../lib/progress';
+import { dayCompletion, formatLongDate } from '../lib/progress';
 import { workoutExerciseIdFromGoalId } from '../lib/workouts';
 import type { MemberRole } from '../types';
 
@@ -454,6 +455,25 @@ export function RoomPage({
           </nav>
 
           {activeTab === 'checkin' && (
+            <>
+              {currentMemberId && (
+                <div className="mt-6">
+                  {(() => {
+                    const completion = dayCompletion(store, room.id, currentMemberId, today);
+                    return (
+                      <TodayReminder
+                        today={today}
+                        remainingCount={completion.remaining.length}
+                        total={completion.total}
+                        remainingTitles={completion.remaining.map((i) => i.title)}
+                        streak={myStat?.streak ?? 0}
+                        streakBadgeLabel={streakBadge?.label ?? null}
+                        memberId={currentMemberId}
+                      />
+                    );
+                  })()}
+                </div>
+              )}
             <div className="mt-6 grid gap-8 sm:mt-8 md:gap-10 lg:grid-cols-2 lg:items-start lg:gap-8 xl:gap-10">
               <div className="flex min-w-0 flex-col gap-8 md:gap-10">
                 {/* Today's progress */}
@@ -578,6 +598,7 @@ export function RoomPage({
                 </section>
               </div>
             </div>
+            </>
           )}
 
           {activeTab === 'progress' && currentMember && (

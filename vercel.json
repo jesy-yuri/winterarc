@@ -5,7 +5,7 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/((?!assets|favicon.svg|icons.svg|icons|manifest.webmanifest|sw.js|workbox-.*).*)",
+      "source": "/((?!assets|favicon.svg|icons.svg|icons|manifest.webmanifest|sw.js|workbox-.*|push-listener.js).*)",
       "destination": "/index.html"
     }
   ]

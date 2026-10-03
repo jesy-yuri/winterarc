@@ -34,6 +34,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Background push listener (Layer 2) — plain SW JS imported into sw.js.
+        // Must stay dependency-free; payload shape matches send-daily-reminders.
+        importScripts: ['/push-listener.js'],
         // SPA fallback for app routes — but never for API/auth.
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api/, /auth\/v1/, /\/callback/],
