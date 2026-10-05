@@ -9,6 +9,8 @@ import {
   deleteGoalRemote,
   deletePersonalGoalRemote,
   deleteRoomRemote,
+  ensureCheckInRemote,
+  ensureCheckInRemovedRemote,
   joinChallengeRemote,
   joinRoomRemote,
   leaveChallengeRemote,
@@ -31,6 +33,13 @@ import {
   updateRoomRemote,
   type RemoteScope,
 } from '../lib/supabaseDb';
+import {
+  enqueuePending,
+  isOfflineError,
+  loadPending,
+  removePending,
+  type PendingCheckIn,
+} from '../lib/offlineQueue';
 import {
   isAdmin,
   isOwner,
@@ -60,6 +69,7 @@ export function useSupabaseArc(user: User | null) {
   const [scope, setScope] = useState<RemoteScope>(EMPTY_SCOPE);
   const [ready, setReady] = useState(false);
   const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
+  const [pendingCount, setPendingCount] = useState(() => loadPending().length);
   const today = useMemo(() => todayKey(), []);
 
   // Reset on account change during render (React-endorsed adjust-during-render
@@ -161,27 +171,125 @@ export function useSupabaseArc(user: User | null) {
   );
 
   const handleToggle = useCallback(
-    async (input: { roomId: string; memberId: string; goalId: string }) => {
+    async (input: { roomId: string; memberId: string; goalId: string; date?: string }) => {
       const { db } = requireDb();
-      await toggleCheckInRemote(db, { ...input, date: today });
-      await refresh();
+      const date = input.date ?? today;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Invalid date.');
+      const exists = scope.checkIns.some(
+        (c) => c.memberId === input.memberId && c.goalId === input.goalId && c.date === date,
+      );
+      const desired = !exists;
+      // Optimistic scope update so UI stays checked even when offline.
+      setScope((prev) => {
+        const has = prev.checkIns.some(
+          (c) => c.memberId === input.memberId && c.goalId === input.goalId && c.date === date,
+        );
+        if (has === desired) return prev;
+        if (desired) {
+          return {
+            ...prev,
+            checkIns: [
+              ...prev.checkIns,
+              {
+                id: `pending-${input.memberId}-${input.goalId}-${date}`,
+                roomId: input.roomId,
+                memberId: input.memberId,
+                goalId: input.goalId,
+                date,
+                createdAt: new Date().toISOString(),
+              },
+            ],
+          };
+        }
+        return {
+          ...prev,
+          checkIns: prev.checkIns.filter(
+            (c) => !(c.memberId === input.memberId && c.goalId === input.goalId && c.date === date),
+          ),
+        };
+      });
+      try {
+        await toggleCheckInRemote(db, { roomId: input.roomId, memberId: input.memberId, goalId: input.goalId, date });
+        removePending((p) => p.memberId === input.memberId && p.goalId === input.goalId && p.date === date);
+        setPendingCount(loadPending().length);
+        await refresh();
+        return { queued: false };
+      } catch (err) {
+        if (isOfflineError(err)) {
+          enqueuePending({ roomId: input.roomId, memberId: input.memberId, goalId: input.goalId, date, desired });
+          setPendingCount(loadPending().length);
+          return { queued: true };
+        }
+        await refresh().catch(() => {});
+        throw err;
+      }
     },
-    [refresh, requireDb, today],
+    [refresh, requireDb, today, scope.checkIns],
   );
 
   const handleToggleWorkout = useCallback(
-    async (input: { roomId: string; memberId: string; exerciseId: string }) => {
-      const { db } = requireDb();
-      await toggleCheckInRemote(db, {
+    async (input: { roomId: string; memberId: string; exerciseId: string; date?: string }) => {
+      return handleToggle({
         roomId: input.roomId,
         memberId: input.memberId,
         goalId: `workout:${input.exerciseId}`,
-        date: today,
+        ...(input.date ? { date: input.date } : {}),
       });
-      await refresh();
     },
-    [refresh, requireDb, today],
+    [handleToggle],
   );
+
+  // Flush offline queue on reconnect / focus / interval.
+  useEffect(() => {
+    if (!active || !user) return;
+    let cancelled = false;
+    async function flush() {
+      const db = getSupabase();
+      if (!db || cancelled) return;
+      const pending: PendingCheckIn[] = loadPending();
+      if (pending.length === 0) {
+        setPendingCount(0);
+        return;
+      }
+      let changed = false;
+      for (const p of pending) {
+        if (cancelled) return;
+        try {
+          if (p.desired) {
+            await ensureCheckInRemote(db, { roomId: p.roomId, memberId: p.memberId, goalId: p.goalId, date: p.date });
+          } else {
+            await ensureCheckInRemovedRemote(db, { memberId: p.memberId, goalId: p.goalId, date: p.date });
+          }
+          removePending((q) => q.memberId === p.memberId && q.goalId === p.goalId && q.date === p.date);
+          changed = true;
+        } catch (err) {
+          // Still offline -> retry later. Real errors -> stop to avoid spin, keep for next round.
+          if (isOfflineError(err)) break;
+          break;
+        }
+      }
+      setPendingCount(loadPending().length);
+      if (changed && !cancelled) await refresh().catch(() => {});
+    }
+    const onOnline = () => {
+      void flush();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void flush();
+    };
+    window.addEventListener('online', onOnline);
+    document.addEventListener('visibilitychange', onVisible);
+    const id = window.setInterval(() => {
+      void flush();
+    }, 30000);
+    void flush();
+    return () => {
+      cancelled = true;
+      window.removeEventListener('online', onOnline);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.clearInterval(id);
+    };
+  }, [active, user, refresh]);
 
   const handleSaveWorkoutPlan = useCallback(
     async (input: { roomId: string; memberId: string; selections: WorkoutSelection[] }) => {
@@ -446,6 +554,7 @@ export function useSupabaseArc(user: User | null) {
     ready,
     store,
     today,
+    pendingCount,
     chatError: scope.chatMessagesError ?? null,
     refresh,
     handleCreate,

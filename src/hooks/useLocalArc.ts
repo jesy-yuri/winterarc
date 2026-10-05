@@ -69,20 +69,20 @@ export function useLocalArc() {
   );
 
   const handleToggle = useCallback(
-    (input: { roomId: string; memberId: string; goalId: string }) => {
-      const next = toggleCheckIn(store, { ...input, date: today });
+    (input: { roomId: string; memberId: string; goalId: string; date?: string }) => {
+      const next = toggleCheckIn(store, { roomId: input.roomId, memberId: input.memberId, goalId: input.goalId, date: input.date ?? today });
       setStore(next);
     },
     [store, today],
   );
 
   const handleToggleWorkout = useCallback(
-    (input: { roomId: string; memberId: string; exerciseId: string }) => {
+    (input: { roomId: string; memberId: string; exerciseId: string; date?: string }) => {
       const next = toggleCheckIn(store, {
         roomId: input.roomId,
         memberId: input.memberId,
         goalId: `workout:${input.exerciseId}`,
-        date: today,
+        date: input.date ?? today,
       });
       setStore(next);
     },

@@ -4,6 +4,7 @@ import {
   personalGoalIdFromGoalId,
   type LocalStore,
 } from './localStore';
+import { getStreakState } from './streak';
 import { WORKOUT_EXERCISES, workoutExerciseIdFromGoalId } from './workouts';
 
 // ---------- Date utilities (local-day based, YYYY-MM-DD) ----------
@@ -126,17 +127,9 @@ export function longestStreak(dates: string[]): number {
   return best;
 }
 
-/** Consecutive active days ending exactly on anchorKey (0 when anchor is inactive). */
+/** Consecutive active days ending on anchorKey, with 3-day grace (frozen, not reset). */
 export function streakEndingOn(dates: string[], anchorKey: string): number {
-  const set = new Set(dates);
-  let streak = 0;
-  const cursor = parseDay(anchorKey);
-  if (!cursor) return 0;
-  while (set.has(toKey(cursor))) {
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
+  return getStreakState(dates, anchorKey).streak;
 }
 
 // ---------- Today's item set (single denominator for daily progress) ----------
@@ -382,18 +375,8 @@ export function evaluateAchievements(
   const unlocked: string[] = [];
   if (dates.length >= 1) unlocked.push('first-step');
 
-  // Current streak with the same "alive from yesterday" leniency as the dashboard.
-  const set = new Set(dates);
-  const cursor = parseDay(today);
-  let streak = 0;
-  if (cursor) {
-    const c = new Date(cursor);
-    if (!set.has(toKey(c))) c.setDate(c.getDate() - 1);
-    while (set.has(toKey(c))) {
-      streak += 1;
-      c.setDate(c.getDate() - 1);
-    }
-  }
+  // Current streak with 3-day grace (frozen during grace, reset after 3 misses).
+  const streak = getStreakState(dates, today).streak;
   if (streak >= 7) unlocked.push('streak-7');
   if (streak >= 14) unlocked.push('streak-14');
   if (dates.length >= 30) unlocked.push('active-30');

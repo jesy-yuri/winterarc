@@ -7,8 +7,8 @@
 // What it does (per subscribed member):
 //   1. Read push_subscriptions + member's room.
 //   2. Count today's check_ins vs total items (goals + active personal + enabled workouts).
-//   3. Compute lenient streak (same rule as calcStreak in src/lib/localStore.ts).
-//   4. If may kulang pa -> web-push send with streak-at-risk copy.
+//   3. Compute 3-day grace streak (same rule as getStreakState in src/lib/streak.ts).
+//   4. If anything remains -> web-push send with Continue-streak copy.
 //
 // NOTE: npm package used here is `web-push`. Add via `deno add npm:web-push`
 // or import map. Service role key required (SUPABASE_SERVICE_ROLE_KEY is
@@ -34,18 +34,48 @@ function todayKey(d = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
-function calcStreak(dates: string[], today: string): number {
-  const set = new Set(dates);
-  let streak = 0;
-  const cursor = new Date(`${today}T00:00:00Z`);
-  if (!set.has(today)) cursor.setUTCDate(cursor.getUTCDate() - 1);
-  const toKey = (d: Date) =>
-    `${d.getUTCFullYear()}-${`${d.getUTCMonth() + 1}`.padStart(2, '0')}-${`${d.getUTCDate()}`.padStart(2, '0')}`;
-  while (set.has(toKey(cursor))) {
-    streak += 1;
-    cursor.setUTCDate(cursor.getUTCDate() - 1);
+const STREAK_GRACE_DAYS = 3;
+
+function diffDays(aKey: string, bKey: string): number | null {
+  const a = new Date(`${aKey}T00:00:00Z`).getTime();
+  const b = new Date(`${bKey}T00:00:00Z`).getTime();
+  if (Number.isNaN(a) || Number.isNaN(b)) return null;
+  return Math.round((b - a) / 86400000);
+}
+
+function getStreakState(dates: string[], today: string): { streak: number; status: string; daysLeft: number } {
+  const set = new Set(dates.filter((d) => d <= today));
+  if (set.size === 0) return { streak: 0, status: 'broken', daysLeft: 0 };
+  let lastActive: string | null = null;
+  for (const d of set) {
+    if (lastActive === null || d > lastActive) lastActive = d;
   }
-  return streak;
+  if (!lastActive) return { streak: 0, status: 'broken', daysLeft: 0 };
+  const gap = diffDays(lastActive, today);
+  if (gap == null || gap >= STREAK_GRACE_DAYS) return { streak: 0, status: 'broken', daysLeft: 0 };
+  // Frozen run with grace: count active days backwards, tolerate 1-2 missed days.
+  const sorted = [...set].filter((d) => d <= (lastActive as string)).sort();
+  let streak = 0;
+  let prev: string | null = null;
+  for (let i = sorted.length - 1; i >= 0; i -= 1) {
+    const cur = sorted[i];
+    if (prev === null) {
+      if (cur !== lastActive) break;
+      streak = 1;
+    } else {
+      const g = diffDays(cur, prev);
+      if (g == null || g <= 0) continue;
+      if (g >= STREAK_GRACE_DAYS + 1) break;
+      streak += 1;
+    }
+    prev = cur;
+  }
+  const status = gap === 0 ? 'active' : gap === 1 ? 'at-risk' : 'critical';
+  return { streak, status, daysLeft: STREAK_GRACE_DAYS - gap };
+}
+
+function calcStreak(dates: string[], today: string): number {
+  return getStreakState(dates, today).streak;
 }
 
 Deno.serve(async () => {
@@ -95,17 +125,25 @@ Deno.serve(async () => {
       if (total === 0 || remaining <= 0) continue;
 
       const dates = [...new Set((checkIns ?? []).map((c) => c.date as string))];
-      const streak = calcStreak(dates, today);
+      const state = getStreakState(dates, today);
+      const streak = state.streak;
 
       const { data: room } = await supabase.from('rooms').select('invite_code').eq(
         'id',
         member.room_id,
       ).maybeSingle();
 
+      const title = streak > 0 && (state.status === 'at-risk' || state.status === 'critical')
+        ? state.status === 'critical'
+          ? `Last chance! Your ${streak}-day streak resets today`
+          : `Continue your ${streak}-day streak — ${state.daysLeft} days left`
+        : streak > 0
+          ? `Your ${streak}-day streak is at risk`
+          : `Today's goals: ${remaining} of ${total} remaining`;
       const payload = JSON.stringify({
-        title: streak > 0 ? `Your ${streak}-day streak is at risk` : `Today's goals: ${remaining} of ${total} remaining`,
+        title,
         body: streak > 0
-          ? `You still have ${remaining} of ${total} goals left today. Check in to keep your streak alive.`
+          ? `You still have ${remaining} of ${total} goals left today. Check in to reach ${streak + 1} days.`
           : `${remaining} of ${total} goals left today. Select a goal to check in.`,
         url: room ? `/room/${room.invite_code}` : '/',
       });

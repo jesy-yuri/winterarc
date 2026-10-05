@@ -1,7 +1,8 @@
-import { BellRing, X } from 'lucide-react';
+import { BellRing, Flame, X } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Section';
 import { StreakFlame } from '../streak/StreakFlame';
+import type { StreakStatus } from '../../lib/streak';
 
 export function DailyReminderCard({
   remainingCount,
@@ -14,8 +15,9 @@ export function DailyReminderCard({
   title,
   body,
   onDismiss,
-  onNotify,
-  notifyLabel = 'Notify me now',
+  streakStatus = 'active',
+  daysLeft = 0,
+  onContinueStreak,
 }: {
   remainingCount: number;
   total: number;
@@ -27,10 +29,12 @@ export function DailyReminderCard({
   title: string;
   body: string;
   onDismiss: () => void;
-  onNotify: () => void;
-  notifyLabel?: string;
+  streakStatus?: StreakStatus;
+  daysLeft?: number;
+  onContinueStreak?: () => void;
 }) {
   const preview = remainingTitles.slice(0, 4);
+  const needsContinue = streak > 0 && (streakStatus === 'at-risk' || streakStatus === 'critical');
 
   return (
     <section
@@ -60,7 +64,8 @@ export function DailyReminderCard({
           type="button"
           onClick={onDismiss}
           aria-label="Dismiss reminder for today"
-          className="shrink-0 rounded-lg p-1.5 text-faint transition-colors hover:bg-ink/[0.06] hover:text-ink"
+          title="Dismiss for today"
+          className="shrink-0 rounded-lg p-2 text-faint transition-colors hover:bg-ink/[0.06] hover:text-ink"
         >
           <X size={16} aria-hidden="true" />
         </button>
@@ -68,13 +73,19 @@ export function DailyReminderCard({
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Badge tone="accent">
-          <StreakFlame checkedInToday={checkedInToday} size={11} streak={streak} />
+          <StreakFlame checkedInToday={checkedInToday} size={11} streak={streak} status={streakStatus} />
           {streak}-day streak{streakBadgeLabel ? ` · ${streakBadgeLabel}` : ''}
         </Badge>
         <Badge tone="neutral">
           {remainingCount} of {total} goals left
         </Badge>
-        {isEvening && streak > 0 && <Badge tone="warning">At risk — check in soon</Badge>}
+        {needsContinue ? (
+          <Badge tone="warning">
+            Continue streak · {daysLeft} day{daysLeft === 1 ? '' : 's'} left
+          </Badge>
+        ) : (
+          isEvening && streak > 0 && <Badge tone="warning">At risk — check in soon</Badge>
+        )}
       </div>
 
       {preview.length > 0 && (
@@ -96,15 +107,14 @@ export function DailyReminderCard({
         </ul>
       )}
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button type="button" size="sm" onClick={onNotify}>
-          <BellRing size={14} aria-hidden="true" />
-          {notifyLabel}
-        </Button>
-        <Button type="button" size="sm" variant="secondary" onClick={onDismiss}>
-          Dismiss for today
-        </Button>
-      </div>
+      {needsContinue && onContinueStreak && (
+        <div className="mt-4">
+          <Button type="button" size="sm" onClick={onContinueStreak}>
+            <Flame size={14} aria-hidden="true" />
+            Continue streak
+          </Button>
+        </div>
+      )}
     </section>
   );
 }

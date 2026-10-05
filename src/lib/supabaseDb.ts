@@ -456,6 +456,7 @@ export async function toggleCheckInRemote(
   db: SupabaseClient,
   input: { roomId: string; memberId: string; goalId: string; date: string },
 ): Promise<void> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) throw new Error('Invalid date.');
   const lookup = await db
     .from('check_ins')
     .select('id')
@@ -476,6 +477,48 @@ export async function toggleCheckInRemote(
     });
     if (ins.error) throw new Error(ins.error.message);
   }
+}
+
+/**
+ * Idempotent sync helpers for the offline queue flush.
+ * Never blind-toggles: insert-only when desired=true, delete-only when false.
+ */
+export async function ensureCheckInRemote(
+  db: SupabaseClient,
+  input: { roomId: string; memberId: string; goalId: string; date: string },
+): Promise<void> {
+  const lookup = await db
+    .from('check_ins')
+    .select('id')
+    .eq('member_id', input.memberId)
+    .eq('goal_id', input.goalId)
+    .eq('date', input.date)
+    .maybeSingle();
+  if (lookup.error) throw new Error(lookup.error.message);
+  if (lookup.data) return;
+  const ins = await db.from('check_ins').insert({
+    room_id: input.roomId,
+    member_id: input.memberId,
+    goal_id: input.goalId,
+    date: input.date,
+  });
+  // 23505 = unique violation (another device inserted first) — treat as success.
+  if (ins.error && !(ins.error as { code?: string }).code?.includes('23505')) {
+    throw new Error(ins.error.message);
+  }
+}
+
+export async function ensureCheckInRemovedRemote(
+  db: SupabaseClient,
+  input: { memberId: string; goalId: string; date: string },
+): Promise<void> {
+  const del = await db
+    .from('check_ins')
+    .delete()
+    .eq('member_id', input.memberId)
+    .eq('goal_id', input.goalId)
+    .eq('date', input.date);
+  if (del.error) throw new Error(del.error.message);
 }
 
 /* Announcements. */

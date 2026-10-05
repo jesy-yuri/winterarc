@@ -49,9 +49,13 @@ export function DailyChecklist({
     setOptimistic((prev) => ({ ...prev, [goalId]: next }));
     setPending((prev) => new Set(prev).add(goalId));
     try {
-      await onToggle(goalId);
+      const result = (await onToggle(goalId)) as { queued?: boolean } | void;
+      if (result && typeof result === 'object' && result.queued === true) {
+        toast.success("Saved offline — will sync when you're back online.");
+      }
     } catch {
       // Roll back to the pre-tap state so the UI never lies.
+      // Offline taps don't throw (they queue), so reaching here means a real error.
       setOptimistic((prev) => ({ ...prev, [goalId]: current }));
       toast.error('Check-in failed. Reverted.');
     } finally {

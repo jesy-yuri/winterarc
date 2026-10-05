@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { toast } from 'sonner';
 import { useDailyReminder } from '../../hooks/useDailyReminder';
 import { DailyReminderCard } from './DailyReminderCard';
+import type { StreakStatus } from '../../lib/streak';
 
 /**
  * Shell around the Today tab content: reminder card on top, page content below.
@@ -19,6 +19,8 @@ export function TodayReminder({
   streakBadgeLabel,
   checkedInToday,
   memberId,
+  streakStatus = 'active',
+  daysLeft = 0,
   children,
 }: {
   today: string;
@@ -29,25 +31,14 @@ export function TodayReminder({
   streakBadgeLabel: string | null;
   checkedInToday: boolean;
   memberId?: string;
+  streakStatus?: StreakStatus;
+  daysLeft?: number;
   children: ReactNode;
 }) {
-  const r = useDailyReminder({ today, remainingCount, total, remainingTitles, streak, memberId });
+  const r = useDailyReminder({ today, remainingCount, total, remainingTitles, streak, streakStatus, daysLeft, memberId });
 
-  function handleNotify() {
-    if (r.permission !== 'granted') {
-      void r.enableDeviceNotification().then((perm) => {
-        if (perm === 'granted') {
-          const ok = r.notifyNow();
-          if (ok) toast.success('Reminder sent to your device');
-        } else if (perm === 'denied') {
-          toast.error('Notifications are blocked. Allow them in your browser settings.');
-        }
-      });
-      return;
-    }
-    const ok = r.notifyNow();
-    if (ok) toast.success('Reminder sent to your device');
-    else toast.error('Could not send the notification. Try again.');
+  function handleContinueStreak() {
+    document.getElementById('daily-checklist')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   // No member selected — render the tab content untouched.
@@ -68,8 +59,9 @@ export function TodayReminder({
             title={r.copy.title}
             body={r.copy.body}
             onDismiss={r.dismissToday}
-            onNotify={handleNotify}
-            notifyLabel={r.permission === 'granted' ? 'Notify me now' : 'Enable popup'}
+            streakStatus={streakStatus}
+            daysLeft={daysLeft}
+            onContinueStreak={handleContinueStreak}
           />
         </div>
       )}

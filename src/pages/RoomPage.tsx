@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   Activity,
@@ -37,6 +37,7 @@ import { ArcProgress } from '../features/arc/ArcProgress';
 import { Challenges } from '../features/challenges/Challenges';
 import { ChatPanel } from '../features/chat/ChatPanel';
 import { DailyChecklist } from '../features/checkin/DailyChecklist';
+import { CatchUpCheckIn } from '../features/checkin/CatchUpCheckIn';
 import { Leaderboard } from '../features/leaderboard/Leaderboard';
 import { PersonalGoals } from '../features/personal/PersonalGoals';
 import { ProgressCalendar } from '../features/progress/ProgressCalendar';
@@ -60,6 +61,7 @@ import {
   type RoomSettingsInput,
 } from '../lib/localStore';
 import { dayCompletion, formatLongDate } from '../lib/progress';
+import { getLastReadAt, hasUnreadChat, markChatRead } from '../lib/chatRead';
 import { workoutExerciseIdFromGoalId } from '../lib/workouts';
 import type { MemberRole } from '../types';
 
@@ -116,6 +118,7 @@ function tabButtonClass(isActive: boolean, isAdminTab: boolean): string {
 export function RoomPage({
   store,
   today,
+  pendingCount = 0,
   onToggle,
   onToggleWorkout,
   onSaveWorkoutPlan,
@@ -148,8 +151,9 @@ export function RoomPage({
 }: {
   store: LocalStore;
   today: string;
-  onToggle: (input: { roomId: string; memberId: string; goalId: string }) => void | Promise<void>;
-  onToggleWorkout: (input: { roomId: string; memberId: string; exerciseId: string }) => void;
+  pendingCount?: number;
+  onToggle: (input: { roomId: string; memberId: string; goalId: string; date?: string }) => void | Promise<unknown>;
+  onToggleWorkout: (input: { roomId: string; memberId: string; exerciseId: string; date?: string }) => void | Promise<unknown>;
   onSaveWorkoutPlan: (input: {
     roomId: string;
     memberId: string;
@@ -201,6 +205,70 @@ export function RoomPage({
     (r) => r.inviteCode.toUpperCase() === (code ?? '').toUpperCase(),
   );
 
+  // Chat unread dot (frontend only, no backend changes): values derived before
+  // the early return so hooks below stay unconditional.
+  const roomIdForChat = room?.id;
+  const membersForChat = roomIdForChat ? store.members.filter((m) => m.roomId === roomIdForChat) : [];
+  const currentMemberIdForChat = roomIdForChat
+    ? (store.currentMemberByRoom[roomIdForChat] ?? membersForChat[0]?.id)
+    : undefined;
+  const chatMessagesForChat = roomIdForChat
+    ? (store.chatMessages ?? []).filter((m) => m.roomId === roomIdForChat)
+    : [];
+  const [chatReadSync, setChatReadSync] = useState<{ key: string | null; at: string | null }>({
+    key: null,
+    at: null,
+  });
+  const chatReadKey =
+    roomIdForChat && currentMemberIdForChat ? `${roomIdForChat}:${currentMemberIdForChat}` : null;
+  // Reload the last-read point when switching rooms/members (adjust-during-render,
+  // same pattern as the checklist reconcile below).
+  if (chatReadSync.key !== chatReadKey) {
+    setChatReadSync({
+      key: chatReadKey,
+      at:
+        roomIdForChat && currentMemberIdForChat
+          ? getLastReadAt(roomIdForChat, currentMemberIdForChat)
+          : null,
+    });
+  }
+  // Opening the chat tab marks everything seen. Runs during render so opening
+  // the tab clears the dot immediately, including for messages that arrive
+  // while the tab is already open.
+  let latestChatAt = '';
+  for (const m of chatMessagesForChat) if (m.createdAt > latestChatAt) latestChatAt = m.createdAt;
+  if (
+    tab === 'chat' &&
+    roomIdForChat &&
+    currentMemberIdForChat &&
+    latestChatAt &&
+    latestChatAt !== chatReadSync.at
+  ) {
+    markChatRead(roomIdForChat, currentMemberIdForChat, chatMessagesForChat);
+    setChatReadSync({ key: chatReadKey, at: latestChatAt });
+  }
+  // Light polling so the dot can appear without a manual refresh.
+  // Reuses the existing scope refresh — no backend changes.
+  useEffect(() => {
+    if (!onRefreshChat) return;
+    let cancelled = false;
+    const tick = () => {
+      if (!document.hidden && !cancelled) void onRefreshChat().catch(() => {});
+    };
+    const id = window.setInterval(tick, 30000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') tick();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', tick);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', tick);
+    };
+  }, [onRefreshChat]);
+
   if (!room) {
     return (
       <main className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6">
@@ -230,6 +298,9 @@ export function RoomPage({
   const isCurrentUserAdmin = checkIsAdmin(room.id, currentMemberId);
   const isCurrentUserOwner = checkIsOwner(room.id, currentMemberId);
   const activeTab: Tab = !isCurrentUserAdmin && tab === 'admin' ? 'checkin' : tab;
+  const showChatDot =
+    activeTab !== 'chat' &&
+    hasUnreadChat(chatMessagesForChat, currentMemberIdForChat, chatReadSync.at);
   const myToday = store.checkIns.filter(
     (c) => c.roomId === room.id && c.memberId === currentMemberId && c.date === today,
   );
@@ -342,15 +413,16 @@ export function RoomPage({
       const isAdminTab = t.id === 'admin';
       if (!vertical) {
         // Facebook-style: icon-only, equal widths, no swipe needed.
+        const showDot = t.id === 'chat' && showChatDot;
         return (
           <button
             key={t.id}
             type="button"
             onClick={() => selectTab(t.id)}
             aria-current={isActive ? 'page' : undefined}
-            aria-label={t.label}
-            title={t.label}
-            className={`flex flex-1 items-center justify-center border-b-[3px] py-2.5 transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent/60 ${
+            aria-label={showDot ? 'Chat, unread messages' : t.label}
+            title={showDot ? 'Chat, unread messages' : t.label}
+            className={`relative flex flex-1 items-center justify-center border-b-[3px] py-2.5 transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent/60 ${
               isActive
                 ? isAdminTab
                   ? 'border-warning text-warning'
@@ -360,22 +432,39 @@ export function RoomPage({
                   : 'border-transparent text-faint hover:text-ink'
             }`}
           >
-            <Icon size={20} aria-hidden="true" />
+            <span className="relative inline-flex">
+              <Icon size={20} aria-hidden="true" />
+              {showDot && (
+                <span
+                  aria-hidden="true"
+                  className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-danger ring-2 ring-base"
+                />
+              )}
+            </span>
           </button>
         );
       }
+      const showDotVertical = t.id === 'chat' && showChatDot;
       return (
         <button
           key={t.id}
           type="button"
           onClick={() => selectTab(t.id)}
           aria-current={isActive ? 'page' : undefined}
+          aria-label={showDotVertical ? 'Chat, unread messages' : undefined}
           className={`flex items-center gap-2.5 text-sm whitespace-nowrap w-full rounded-xl px-3.5 py-2.5 ${tabButtonClass(isActive, isAdminTab)} ${
             vertical && isActive && !isAdminTab ? 'bg-surface shadow-card' : ''
           } ${vertical && isActive && isAdminTab ? 'bg-warning/[0.12]' : ''}`}
         >
           <Icon size={16} aria-hidden="true" />
           {t.label}
+          {showDotVertical && (
+            <span
+              aria-hidden="true"
+              className="ml-auto inline-flex h-2 w-2 shrink-0 rounded-full bg-danger"
+            />
+          )}
+          {showDotVertical && <span className="sr-only">(unread messages)</span>}
         </button>
       );
     });
@@ -504,6 +593,8 @@ export function RoomPage({
                   streakBadgeLabel={streakBadge?.label ?? null}
                   checkedInToday={(myStat?.todayCount ?? 0) > 0}
                   memberId={currentMemberId}
+                  streakStatus={myStat?.streakStatus ?? 'active'}
+                  daysLeft={myStat?.streakDaysLeft ?? 0}
                 >
                   <div className="mt-6 grid gap-8 sm:mt-8 md:gap-10 lg:grid-cols-2 lg:items-start lg:gap-8 xl:gap-10">
               <div className="flex min-w-0 flex-col gap-8 md:gap-10">
@@ -554,10 +645,15 @@ export function RoomPage({
                           checkedInToday={(myStat?.todayCount ?? 0) > 0}
                           size={17}
                           streak={myStat?.streak ?? 0}
+                          status={myStat?.streakStatus ?? 'active'}
                         />
                       }
                       value={`${myStat?.streak ?? 0}`}
-                      label={streakBadge ? `Day streak · ${streakBadge.label}` : 'Day streak'}
+                      label={
+                        myStat?.streakStatus === 'at-risk' || myStat?.streakStatus === 'critical'
+                          ? `Day streak · Continue! ${myStat?.streakDaysLeft ?? 0} left`
+                          : streakBadge ? `Day streak · ${streakBadge.label}` : 'Day streak'
+                      }
                     />
                     <Stat
                       icon={<Zap size={17} aria-hidden="true" />}
@@ -573,12 +669,17 @@ export function RoomPage({
                 </section>
 
                 {/* Today's goals */}
-                <section aria-labelledby="today-goals">
+                <section aria-labelledby="today-goals" id="daily-checklist" className="scroll-mt-24">
                   <SectionHeader
                     eyebrow="Check-in"
                     title="Today's Goals"
                     description="Tap a goal to check it in. Each check-in earns +10 XP."
                   />
+                  {pendingCount > 0 && (
+                    <p className="mt-3 rounded-lg border border-warning/30 bg-warning/[0.1] px-2.5 py-1.5 text-[13px] font-medium text-warning" aria-live="polite">
+                      {pendingCount} check-in{pendingCount === 1 ? '' : 's'} waiting to sync — will send when you're back online.
+                    </p>
+                  )}
                   <div className="mt-4">
                     {currentMember ? (
                       <DailyChecklist
@@ -592,6 +693,20 @@ export function RoomPage({
                       <p className="text-sm text-muted">No member selected.</p>
                     )}
                   </div>
+                  {currentMember && (
+                    <div className="mt-4">
+                      <CatchUpCheckIn
+                        today={today}
+                        goals={goals}
+                        memberCheckIns={store.checkIns.filter(
+                          (c) => c.roomId === room.id && c.memberId === currentMember.id,
+                        )}
+                        onToggle={(goalId, date) =>
+                          onToggle({ roomId: room.id, memberId: currentMember.id, goalId, date })
+                        }
+                      />
+                    </div>
+                  )}
                 </section>
               </div>
 

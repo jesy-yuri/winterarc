@@ -3,7 +3,7 @@ import { CalendarRange, Flame, Megaphone, Trophy } from 'lucide-react';
 const ITEMS = [
   {
     title: 'Visible streak',
-    body: 'Every day you check in, your streak grows. Miss a day and it resets. Simple and honest.',
+    body: 'Every day you check in, your streak grows. Miss a day and you get a warning — you have 3 days to continue before it resets.',
     icon: Flame,
     span: 'sm:col-span-2',
   },

@@ -83,7 +83,7 @@ function PodiumCard({
         {stat.xp} <span className="text-xs font-normal text-faint">XP</span>
       </p>
       <p className="mt-1 inline-flex items-center gap-1 text-xs text-faint tabular-nums">
-        <StreakFlame checkedInToday={stat.todayCount > 0} size={12} streak={stat.streak} />
+        <StreakFlame checkedInToday={stat.todayCount > 0} size={12} streak={stat.streak} status={stat.streakStatus} />
         {stat.streak} day streak
       </p>
 

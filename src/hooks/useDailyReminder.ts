@@ -23,6 +23,8 @@ interface UseDailyReminderInput {
   total: number;
   remainingTitles: string[];
   streak: number;
+  streakStatus?: 'active' | 'at-risk' | 'critical' | 'broken';
+  daysLeft?: number;
   /** Current member id — used to save push subscription to Supabase. */
   memberId?: string;
 }
@@ -33,6 +35,8 @@ export function useDailyReminder({
   total,
   remainingTitles,
   streak,
+  streakStatus = 'active',
+  daysLeft = 0,
   memberId,
 }: UseDailyReminderInput) {
   const [prefs, setPrefs] = useState<ReminderPrefs>(() => loadReminderPrefs());
@@ -55,7 +59,7 @@ export function useDailyReminder({
   const hasRemaining = remainingCount > 0 && total > 0;
   const dismissedToday = prefs.lastShownDate === today;
 
-  // App-open + evening rule: show card when enabled, may kulang pa, hindi pa dismissed today.
+  // App-open + evening rule: show card when enabled, still has remaining, not dismissed today.
   const showCard = prefs.enabled && hasRemaining && !dismissedToday;
 
   const copy = useMemo(
@@ -66,12 +70,14 @@ export function useDailyReminder({
         remainingTitles,
         streak,
         isEvening,
+        streakStatus,
+        daysLeft,
       }),
-    [remainingCount, total, remainingTitles, streak, isEvening],
+    [remainingCount, total, remainingTitles, streak, isEvening, streakStatus, daysLeft],
   );
 
   // Evening device notification (foreground): fire once per day when tab is open,
-  // past evening time, may kulang pa, and permission granted.
+  // past evening time, still has remaining, and permission granted.
   // setState is deferred via timeout so we don't cascade-render inside the effect.
   useEffect(() => {
     if (!prefs.enabled || !hasRemaining || !isEvening) return;

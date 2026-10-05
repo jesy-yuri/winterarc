@@ -86,6 +86,7 @@ export interface ReminderCopy {
  * Build the reminder copy.
  * - Morning/app-open: today's remaining goals.
  * - Evening + streak alive: streak-at-risk warning.
+ * - Grace (1-2 missed days): "Continue streak" warning with days left.
  */
 export function buildReminderCopy(args: {
   remainingCount: number;
@@ -93,13 +94,31 @@ export function buildReminderCopy(args: {
   remainingTitles: string[];
   streak: number;
   isEvening: boolean;
+  streakStatus?: 'active' | 'at-risk' | 'critical' | 'broken';
+  daysLeft?: number;
 }): ReminderCopy {
   const { remainingCount, total, remainingTitles, streak, isEvening } = args;
+  const streakStatus = args.streakStatus ?? 'active';
+  const daysLeft = args.daysLeft ?? 0;
   const preview =
     remainingTitles.length > 0
       ? remainingTitles.slice(0, 3).join(', ') +
         (remainingTitles.length > 3 ? ` +${remainingTitles.length - 3} more` : '')
       : '';
+
+  // Grace warnings take priority — user missed 1-2 days, streak frozen but alive.
+  if (streak > 0 && (streakStatus === 'at-risk' || streakStatus === 'critical')) {
+    const lastChance = streakStatus === 'critical';
+    return {
+      title: lastChance
+        ? `Last chance! Your ${streak}-day streak resets today`
+        : `Continue your ${streak}-day streak — ${daysLeft} day${daysLeft === 1 ? '' : 's'} left`,
+      body:
+        remainingCount > 0
+          ? `You missed a day but your streak is still alive${preview ? `: ${preview}` : ''}. Check in today to reach ${streak + 1} days.`
+          : `Check in today to keep your ${streak}-day streak alive and reach ${streak + 1} days.`,
+    };
+  }
 
   if (isEvening && streak > 0) {
     return {

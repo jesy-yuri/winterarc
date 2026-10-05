@@ -125,6 +125,7 @@ function App() {
             <RoomPage
               store={store}
               today={today}
+              pendingCount={remoteArc.active ? (remoteArc.pendingCount ?? 0) : 0}
               onToggle={handleToggle}
               onToggleWorkout={handleToggleWorkout}
               onSaveWorkoutPlan={handleSaveWorkoutPlan}

@@ -14,6 +14,7 @@ import type {
   WorkoutSelection,
 } from '../types';
 import { WORKOUT_EXERCISES, workoutGoalId } from './workouts';
+import { getStreakState } from './streak';
 
 const STORAGE_KEY = 'winterarc:local:v1';
 
@@ -376,6 +377,8 @@ export function toggleCheckIn(
   store: LocalStore,
   input: { roomId: string; memberId: string; goalId: string; date: string },
 ): LocalStore {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) throw new Error('Invalid date.');
+  if (input.date > todayKey()) throw new Error('Cannot check in for a future date.');
   const found = store.checkIns.find(
     (c) =>
       c.memberId === input.memberId &&
@@ -1142,22 +1145,18 @@ export interface MemberStat {
   totalCheckIns: number;
   todayCount: number;
   streak: number;
+  streakStatus: 'active' | 'at-risk' | 'critical' | 'broken';
+  streakDaysLeft: number;
+  streakDaysSinceActive: number;
 }
 
 export function calcStreak(dates: string[]): number {
   if (dates.length === 0) return 0;
-  const set = new Set(dates);
-  let streak = 0;
-  const cursor = new Date();
-  // If no check-in today, start counting from yesterday (still alive streak)
-  if (!set.has(todayKey(cursor))) {
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  while (set.has(todayKey(cursor))) {
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
+  return getStreakState(dates, todayKey()).streak;
+}
+
+export function getMemberStreakState(dates: string[], today: string) {
+  return getStreakState(dates, today);
 }
 
 export interface StreakBadge {
@@ -1187,12 +1186,16 @@ export function getMemberStats(
       );
       const today = all.filter((c) => c.date === date);
       const uniqueDates = [...new Set(all.map((c) => c.date))];
+      const streakState = getStreakState(uniqueDates, date);
       return {
         member,
         xp: all.length * 10,
         totalCheckIns: all.length,
         todayCount: today.length,
-        streak: calcStreak(uniqueDates),
+        streak: streakState.streak,
+        streakStatus: streakState.status,
+        streakDaysLeft: streakState.daysLeft,
+        streakDaysSinceActive: streakState.daysSinceActive,
       };
     })
     .sort((a, b) => b.xp - a.xp || b.streak - a.streak);
