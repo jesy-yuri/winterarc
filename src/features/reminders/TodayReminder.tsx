@@ -2,11 +2,13 @@ import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import { useDailyReminder } from '../../hooks/useDailyReminder';
 import { DailyReminderCard } from './DailyReminderCard';
-import { ReminderSettings } from './ReminderSettings';
 
 /**
- * Shell around the Today tab content: reminder card on top, settings at the bottom.
- * One hook instance drives both so dismiss/toggle state never goes stale.
+ * Shell around the Today tab content: reminder card on top, page content below.
+ * Reminder settings now live in the Settings tab (RoomSettingsTab) so they
+ * stay reachable even when the reminder is turned off. One hook instance
+ * drives the card here; the Settings tab runs its own instance (different
+ * tab = never on screen at the same time, synced via localStorage).
  */
 export function TodayReminder({
   today,
@@ -48,38 +50,6 @@ export function TodayReminder({
     else toast.error('Could not send the notification. Try again.');
   }
 
-  const settings = r.prefs.enabled ? (
-    <div className="mt-8">
-      <ReminderSettings
-        enabled={r.prefs.enabled}
-        eveningTime={r.prefs.eveningTime}
-        permission={r.permission}
-        pushSupported={r.pushSupported}
-        vapidConfigured={r.vapidConfigured}
-        pushSubscribed={r.prefs.pushSubscribed}
-        pushBusy={r.pushBusy}
-        pushError={r.pushError}
-        onToggleEnabled={(next) => (next ? r.enableReminder() : r.disableReminder())}
-        onEveningTimeChange={r.setEveningTime}
-        onEnableDeviceNotification={() => {
-          void r.enableDeviceNotification().then((perm) => {
-            if (perm === 'granted') toast.success('Device notifications enabled');
-            else if (perm === 'denied') toast.error('Blocked. Allow notifications in your browser settings.');
-          });
-        }}
-        onTestNotify={handleNotify}
-        onEnableBackgroundPush={() => {
-          void r.enableBackgroundPush().then((sub) => {
-            if (sub) toast.success('Background push enabled. You will be notified even when the app is closed.');
-          });
-        }}
-        onDisableBackgroundPush={() => {
-          void r.disableBackgroundPush();
-        }}
-      />
-    </div>
-  ) : null;
-
   // No member selected — render the tab content untouched.
   if (!memberId) return <>{children}</>;
 
@@ -104,7 +74,6 @@ export function TodayReminder({
         </div>
       )}
       {children}
-      {settings}
     </>
   );
 }

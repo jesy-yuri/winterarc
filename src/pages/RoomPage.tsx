@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Settings,
   ShieldCheck,
+  SlidersHorizontal,
   Trash2,
   Trophy,
   UserPlus,
@@ -42,9 +43,10 @@ import { ProgressCalendar } from '../features/progress/ProgressCalendar';
 import { WeeklyReview } from '../features/progress/WeeklyReview';
 import { RoomSwitcher } from '../features/rooms/RoomSwitcher';
 import { WorkoutPlanEditor } from '../features/workout/WorkoutPlanEditor';
-import { ProfilePictureEditor } from '../features/profile/ProfilePictureEditor';
+import { RoomSettingsTab } from '../features/settings/RoomSettingsTab';
 import { TodayReminder } from '../features/reminders/TodayReminder';
 import { StreakFlame } from '../features/streak/StreakFlame';
+import { useHeaderVisibility } from '../hooks/useHeaderVisibility';
 import {
   getEnabledWorkouts,
   getMemberStats,
@@ -61,7 +63,7 @@ import { dayCompletion, formatLongDate } from '../lib/progress';
 import { workoutExerciseIdFromGoalId } from '../lib/workouts';
 import type { MemberRole } from '../types';
 
-type Tab = 'checkin' | 'progress' | 'challenges' | 'leaderboard' | 'announcements' | 'chat' | 'admin';
+type Tab = 'checkin' | 'progress' | 'challenges' | 'leaderboard' | 'announcements' | 'chat' | 'admin' | 'settings';
 
 const TABS: { id: Tab; label: string; icon: typeof CalendarCheck; adminOnly?: boolean }[] = [
   { id: 'checkin', label: 'Today', icon: CalendarCheck },
@@ -71,6 +73,7 @@ const TABS: { id: Tab; label: string; icon: typeof CalendarCheck; adminOnly?: bo
   { id: 'announcements', label: 'Announcements', icon: Megaphone },
   { id: 'chat', label: 'Chat', icon: MessageCircle },
   { id: 'admin', label: 'Admin', icon: Settings, adminOnly: true },
+  { id: 'settings', label: 'Settings', icon: SlidersHorizontal },
 ];
 
 function parseDay(value: string): Date | null {
@@ -193,6 +196,7 @@ export function RoomPage({
   const [chatRefreshError, setChatRefreshError] = useState('');
   const [refreshingChat, setRefreshingChat] = useState(false);
   const [leaveError, setLeaveError] = useState('');
+  const { hidden: headerHidden, show: showHeader } = useHeaderVisibility();
   const room = store.rooms.find(
     (r) => r.inviteCode.toUpperCase() === (code ?? '').toUpperCase(),
   );
@@ -317,18 +321,56 @@ export function RoomPage({
 
   const visibleTabs = TABS.filter((t) => !t.adminOnly || isCurrentUserAdmin);
 
+  // Shared completion snapshot for the Today card + Settings tab hook.
+  const completion = currentMemberId
+    ? dayCompletion(store, room.id, currentMemberId, today)
+    : null;
+  const remainingCount = completion?.remaining.length ?? 0;
+  const completionTotal = completion?.total ?? 0;
+  const remainingTitles = completion?.remaining.map((i) => i.title) ?? [];
+
+  function selectTab(id: Tab) {
+    setTab(id);
+    // Switching tabs always brings the bars back (also re-anchors scroll tracking).
+    showHeader();
+  }
+
   const tabButtons = (vertical: boolean) =>
     visibleTabs.map((t) => {
       const isActive = activeTab === t.id;
       const Icon = t.icon;
       const isAdminTab = t.id === 'admin';
+      if (!vertical) {
+        // Facebook-style: icon-only, equal widths, no swipe needed.
+        return (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => selectTab(t.id)}
+            aria-current={isActive ? 'page' : undefined}
+            aria-label={t.label}
+            title={t.label}
+            className={`flex flex-1 items-center justify-center border-b-[3px] py-2.5 transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent/60 ${
+              isActive
+                ? isAdminTab
+                  ? 'border-warning text-warning'
+                  : 'border-accent text-accent-strong'
+                : isAdminTab
+                  ? 'border-transparent text-warning/50 hover:text-warning'
+                  : 'border-transparent text-faint hover:text-ink'
+            }`}
+          >
+            <Icon size={20} aria-hidden="true" />
+          </button>
+        );
+      }
       return (
         <button
           key={t.id}
           type="button"
-          onClick={() => setTab(t.id)}
+          onClick={() => selectTab(t.id)}
           aria-current={isActive ? 'page' : undefined}
-          className={`flex items-center gap-2.5 text-sm whitespace-nowrap ${vertical ? 'w-full rounded-xl px-3.5 py-2.5' : 'shrink-0 border-b-2 px-3 py-2.5 sm:px-3.5'} ${tabButtonClass(isActive, isAdminTab)} ${
+          className={`flex items-center gap-2.5 text-sm whitespace-nowrap w-full rounded-xl px-3.5 py-2.5 ${tabButtonClass(isActive, isAdminTab)} ${
             vertical && isActive && !isAdminTab ? 'bg-surface shadow-card' : ''
           } ${vertical && isActive && isAdminTab ? 'bg-warning/[0.12]' : ''}`}
         >
@@ -439,32 +481,25 @@ export function RoomPage({
               </div>
             </details>
 
-            {currentMember && (
-              <div className="mt-4 border-t border-line pt-4">
-                <ProfilePictureEditor
-                  member={currentMember}
-                  onSave={(avatarUrl) => onUpdateAvatar(currentMember.id, avatarUrl)}
-                />
-              </div>
-            )}
           </header>
 
-          {/* Mobile + tablet tabs */}
-          <nav aria-label="Room sections" className="no-scrollbar -mx-4 mt-6 flex gap-1 overflow-x-auto border-b border-line px-4 sm:-mx-6 sm:px-6 md:hidden">
-            {tabButtons(false)}
-          </nav>
+          {/* Mobile tabs — Facebook-style: icon-only row, sticky, hides on scroll down */}
+          <div
+            className={`sticky z-30 -mx-4 mt-6 border-b border-line bg-base/90 backdrop-blur transition-transform duration-300 will-change-transform motion-reduce:transition-none sm:-mx-6 md:hidden ${headerHidden ? 'top-0 -translate-y-full' : 'top-[56px] translate-y-0 sm:top-[60px]'}`}
+          >
+            <nav aria-label="Room sections" className="flex items-stretch px-2">
+              {tabButtons(false)}
+            </nav>
+          </div>
 
           {activeTab === 'checkin' &&
             (() => {
-              const completion = currentMemberId
-                ? dayCompletion(store, room.id, currentMemberId, today)
-                : null;
               return (
                 <TodayReminder
                   today={today}
-                  remainingCount={completion?.remaining.length ?? 0}
-                  total={completion?.total ?? 0}
-                  remainingTitles={completion?.remaining.map((i) => i.title) ?? []}
+                  remainingCount={remainingCount}
+                  total={completionTotal}
+                  remainingTitles={remainingTitles}
                   streak={myStat?.streak ?? 0}
                   streakBadgeLabel={streakBadge?.label ?? null}
                   checkedInToday={(myStat?.todayCount ?? 0) > 0}
@@ -857,6 +892,21 @@ export function RoomPage({
                 </>
               )}
             </div>
+          )}
+
+          {activeTab === 'settings' && (
+            <RoomSettingsTab
+              today={today}
+              remainingCount={remainingCount}
+              total={completionTotal}
+              remainingTitles={remainingTitles}
+              streak={myStat?.streak ?? 0}
+              memberId={currentMemberId}
+              member={currentMember}
+              onUpdateAvatar={(avatarUrl) =>
+                currentMember && onUpdateAvatar(currentMember.id, avatarUrl)
+              }
+            />
           )}
 
           {/* Your membership — device-bound identity, no impersonation switching */}

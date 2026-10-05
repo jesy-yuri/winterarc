@@ -2,9 +2,9 @@ import { Flame } from 'lucide-react';
 
 /**
  * Streak flame with a checked-in state.
- * - Grey (muted) when the member has no check-ins today yet.
- * - Fire (warning) once checked in today.
- * Color is never the only signal — the label includes the state for screen readers.
+ * - Real fire emoji (colored) once checked in today.
+ * - Grey outline flame when not checked in yet.
+ * Color/emoji is never the only signal — surrounding labels include the state.
  */
 export function StreakFlame({
   checkedInToday,
@@ -15,16 +15,16 @@ export function StreakFlame({
   size?: number;
   streak?: number;
 }) {
-  return (
-    <Flame
-      size={size}
-      aria-hidden="true"
-      aria-label={
-        checkedInToday
-          ? `Streak ${streak} days, checked in today`
-          : `Streak ${streak} days, not checked in yet`
-      }
-      className={checkedInToday ? 'text-warning' : 'text-faint'}
-    />
-  );
+  if (checkedInToday) {
+    return (
+      <span
+        role="img"
+        aria-label={`Streak ${streak} days, checked in today`}
+        style={{ fontSize: size, lineHeight: 1 }}
+      >
+        🔥
+      </span>
+    );
+  }
+  return <Flame size={size} aria-hidden="true" className="text-faint" />;
 }
